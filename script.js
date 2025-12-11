@@ -244,16 +244,49 @@ function handleStockfishMessage(line) {
     // Kept for global debugging if needed
 }
 
+// Robust PGN Cleaner
+function cleanPgn(pgn) {
+    let lines = pgn.split('\n');
+    let cleanedOptions = [];
+
+    for (let line of lines) {
+        line = line.trim();
+        if (!line) {
+            cleanedOptions.push(line);
+            continue;
+        }
+
+        // Fix headers missing closing bracket e.g. [Site "Chess.com"
+        // Also ensure headers start with [ and contain "
+        if (line.startsWith('[') && line.includes('"')) {
+            if (!line.endsWith(']')) {
+                line = line + ']';
+            }
+        }
+        cleanedOptions.push(line);
+    }
+    return cleanedOptions.join('\n');
+}
+
 // Start Review Button
 document.getElementById('start-review-btn').addEventListener('click', async () => {
     const els = getEls();
     logToScreen("Analyze button clicked.");
-    const pgn = els.pgnInput.value;
+    let pgn = els.pgnInput.value;
     if (!pgn) { alert("Please enter PGN"); return; }
+
+    // Auto-clean PGN
+    pgn = cleanPgn(pgn);
 
     try {
         reviewChess = new Chess();
-        if (!reviewChess.load_pgn(pgn)) { alert("Invalid PGN"); return; }
+        if (!reviewChess.load_pgn(pgn)) {
+            // Attempt even more aggressive cleaning if strict fail?
+            // For now just alert
+            logToScreen("PGN Load Failed.");
+            alert("Invalid PGN. Check format.");
+            return;
+        }
 
         // Prepare UI
         els.setup.classList.add('hidden');
