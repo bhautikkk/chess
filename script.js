@@ -270,7 +270,12 @@ try {
             logToScreen("Stockfish Init Error: " + err);
         });
     } else {
-        logToScreen("ERROR: Stockfish variable not found. Check if stockfish.js is loaded.");
+        logToScreen("ERROR: Stockfish variable not found.");
+        if (window.StockfishScriptRunning) {
+            logToScreen("Trace: stockfish.js ran, but didn't set 'Stockfish'.");
+        } else {
+            logToScreen("Trace: stockfish.js did NOT run. Check network tab/404.");
+        }
     }
 } catch (e) {
     logToScreen("CRITICAL ERROR: " + e.message);

@@ -10,6 +10,8 @@
  * https://tests.stockfishchess.org/nns?network_name=nn-9067e33176e
  */
 !function () {
+    console.log("Trace: stockfish.js is executing...");
+    window.StockfishScriptRunning = true;
     var a, u, s, e, r, o, n;
     function t() {
         function e(e) {
