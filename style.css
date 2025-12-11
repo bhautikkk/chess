@@ -208,8 +208,42 @@ button:hover {
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.btn-secondary:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+/* Voice Chat Button */
+.btn-mic {
+    background-color: #555;
+    width: 50px;
+    /* Square/Circle */
+    padding: 10px;
+    font-size: 1.2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn-mic.active {
+    background-color: var(--primary-color);
+    /* Green when active */
+    animation: pulse 1.5s infinite;
+}
+
+.btn-mic.muted {
+    background-color: var(--danger-color);
+    /* Red when muted */
+    opacity: 0.8;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+    }
 }
 
 .btn-draw {

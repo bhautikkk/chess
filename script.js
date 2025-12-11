@@ -34,11 +34,15 @@ let navElements = {
 // Screen Handling
 function showScreen(screen) {
     [menuScreen, gameScreen, waitingScreen].forEach(s => {
-        s.classList.add('hidden');
-        s.classList.remove('active');
+        if (s) {
+            s.classList.add('hidden');
+            s.classList.remove('active');
+        }
     });
-    screen.classList.remove('hidden');
-    screen.classList.add('active');
+    if (screen) {
+        screen.classList.remove('hidden');
+        screen.classList.add('active');
+    }
 
     // Clear error when switching screens
     if (menuErrorElement) menuErrorElement.innerText = '';
@@ -135,6 +139,7 @@ const modalContainer = document.getElementById('modal-container');
 const toastContainer = document.getElementById('toast-container');
 
 function showToast(msg, duration = 2000) {
+    if (!toastContainer) return;
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.innerText = msg;
@@ -145,27 +150,31 @@ function showToast(msg, duration = 2000) {
 }
 
 function showModal(html) {
-    modalContainer.innerHTML = html;
+    if (modalContainer) modalContainer.innerHTML = html;
 }
 
 function closeModal() {
-    modalContainer.innerHTML = '';
+    if (modalContainer) modalContainer.innerHTML = '';
 }
 
 // --- Multiplayer Controls ---
 const drawBtn = document.getElementById('draw-btn');
 const resignBtn = document.getElementById('resign-btn');
 
-drawBtn.addEventListener('click', () => {
-    socket.emit('offerDraw', currentRoomCode);
-    showToast("Draw offer sent...", 2000);
-});
+if (drawBtn) {
+    drawBtn.addEventListener('click', () => {
+        socket.emit('offerDraw', currentRoomCode);
+        showToast("Draw offer sent...", 2000);
+    });
+}
 
-resignBtn.addEventListener('click', () => {
-    if (confirm("Are you sure you want to resign?")) {
-        socket.emit('resign', currentRoomCode);
-    }
-});
+if (resignBtn) {
+    resignBtn.addEventListener('click', () => {
+        if (confirm("Are you sure you want to resign?")) {
+            socket.emit('resign', currentRoomCode);
+        }
+    });
+}
 
 function showGameOverModal(title, message, isRematch = false) {
     const html = `
@@ -182,15 +191,21 @@ function showGameOverModal(title, message, isRematch = false) {
     `;
     showModal(html);
 
-    document.getElementById('rematch-btn').addEventListener('click', (e) => {
-        socket.emit('requestRematch', currentRoomCode);
-        e.target.innerText = "Waiting for Opponent...";
-        e.target.disabled = true;
-    });
+    const rematchBtn = document.getElementById('rematch-btn');
+    if (rematchBtn) {
+        rematchBtn.addEventListener('click', (e) => {
+            socket.emit('requestRematch', currentRoomCode);
+            e.target.innerText = "Waiting for Opponent...";
+            e.target.disabled = true;
+        });
+    }
 
-    document.getElementById('main-menu-btn').addEventListener('click', () => {
-        location.reload();
-    });
+    const mainMenuBtn = document.getElementById('main-menu-btn');
+    if (mainMenuBtn) {
+        mainMenuBtn.addEventListener('click', () => {
+            location.reload();
+        });
+    }
 }
 
 // --- Audio ---
@@ -199,6 +214,113 @@ const moveSound = new Audio('move.mp3');
 function playMoveSound() {
     moveSound.currentTime = 0;
     moveSound.play().catch(e => console.log("Audio play failed: ", e));
+}
+
+// --- WebRTC Voice Chat ---
+const micBtn = document.getElementById('mic-btn');
+let localStream;
+let peerConnection;
+let isMicOn = false;
+
+const rtcConfig = {
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' } // Free Google STUN server
+    ]
+};
+
+async function startVoiceChat(isInitiator) {
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        isMicOn = true;
+        updateMicButton();
+
+        peerConnection = new RTCPeerConnection(rtcConfig);
+
+        // Add local tracks
+        localStream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, localStream);
+        });
+
+        // Handle remote tracks
+        peerConnection.ontrack = (event) => {
+            const remoteAudio = new Audio();
+            remoteAudio.srcObject = event.streams[0];
+            remoteAudio.autoplay = true;
+        };
+
+        // ICE Candidates
+        peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+                socket.emit('signal', {
+                    roomCode: currentRoomCode,
+                    signalData: { type: 'candidate', candidate: event.candidate }
+                });
+            }
+        };
+
+        if (isInitiator) {
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            socket.emit('signal', {
+                roomCode: currentRoomCode,
+                signalData: { type: 'offer', sdp: offer }
+            });
+        }
+
+    } catch (err) {
+        console.error("Error starting voice chat:", err);
+        showToast("Mic access denied or error.", 3000);
+        if (micBtn) micBtn.style.display = 'none'; // Hide if failed
+    }
+}
+
+// Handle Incoming Signals
+socket.on('signal', async (data) => {
+    if (!peerConnection) {
+        await startVoiceChat(false);
+    }
+
+    try {
+        if (data.type === 'offer') {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            socket.emit('signal', {
+                roomCode: currentRoomCode,
+                signalData: { type: 'answer', sdp: answer }
+            });
+        } else if (data.type === 'answer') {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+        } else if (data.type === 'candidate') {
+            await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+        }
+    } catch (err) {
+        console.error("Signaling error:", err);
+    }
+});
+
+// Mic Toggle
+if (micBtn) {
+    micBtn.addEventListener('click', () => {
+        if (localStream) {
+            isMicOn = !isMicOn;
+            localStream.getAudioTracks().forEach(track => track.enabled = isMicOn);
+            updateMicButton();
+        }
+    });
+}
+
+function updateMicButton() {
+    if (!micBtn) return;
+    if (isMicOn) {
+        micBtn.innerText = "🎤";
+        micBtn.classList.add('active');
+        micBtn.classList.remove('muted');
+    } else {
+        micBtn.innerText = "🔇";
+        micBtn.classList.add('muted');
+        micBtn.classList.remove('active');
+    }
 }
 
 // --- Socket Events ---
@@ -212,35 +334,47 @@ socket.on('roomCreated', (roomCode) => {
 });
 
 socket.on('gameStart', (data) => {
-    // data = { white: socketId, whiteName, black: socketId, blackName }
-    gameMode = 'multiplayer';
-    currentRoomCode = currentRoomCode || document.getElementById('room-code-input').value;
+    try {
+        console.log("Game Start Data:", data);
+        gameMode = 'multiplayer';
+        currentRoomCode = currentRoomCode || (document.getElementById('room-code-input') ? document.getElementById('room-code-input').value : null);
 
-    // Store Names
-    navElements.whiteName = data.whiteName || "White";
-    navElements.blackName = data.blackName || "Black";
+        // Store Names
+        navElements.whiteName = data.whiteName || "White";
+        navElements.blackName = data.blackName || "Black";
 
-    if (socket.id === data.black) {
-        playerColor = 'b';
-        isFlipped = true;
-    } else {
-        playerColor = 'w';
-        isFlipped = false;
+        if (socket.id === data.black) {
+            playerColor = 'b';
+            isFlipped = true;
+        } else {
+            playerColor = 'w';
+            isFlipped = false;
+        }
+
+        // UI Reset
+        game.reset();
+        updateGameInfoHeader(false);
+        if (resetBtn) resetBtn.style.display = 'none';
+
+        // Show Multiplayer Buttons
+        if (drawBtn) drawBtn.style.display = 'inline-block';
+        if (resignBtn) resignBtn.style.display = 'inline-block';
+        if (micBtn) micBtn.style.display = 'inline-block';
+
+        closeModal(); // Clear any game over modals
+        showScreen(gameScreen);
+        renderBoardSimple();
+        showToast("Game Started!");
+
+        // Start Voice (Room Creator initiates)
+        // To avoid collision, let's say White initiates.
+        if (socket.id === data.white) {
+            startVoiceChat(true).catch(e => console.log("Voice init error:", e));
+        }
+    } catch (err) {
+        console.error("Game Start Error:", err);
+        showError("Error starting game: " + err.message);
     }
-
-    // UI Reset
-    game.reset();
-    updateGameInfoHeader(false);
-    resetBtn.style.display = 'none';
-
-    // Show Multiplayer Buttons
-    drawBtn.style.display = 'inline-block';
-    resignBtn.style.display = 'inline-block';
-
-    closeModal(); // Clear any game over modals
-    showScreen(gameScreen);
-    renderBoardSimple();
-    showToast("Game Started!");
 });
 
 socket.on('move', (move) => {
@@ -266,15 +400,21 @@ socket.on('drawOffer', () => {
     `;
     showModal(html);
 
-    document.getElementById('accept-draw').addEventListener('click', () => {
-        socket.emit('drawResponse', { roomCode: currentRoomCode, accepted: true });
-        closeModal();
-    });
+    const acceptBtn = document.getElementById('accept-draw');
+    if (acceptBtn) {
+        acceptBtn.addEventListener('click', () => {
+            socket.emit('drawResponse', { roomCode: currentRoomCode, accepted: true });
+            closeModal();
+        });
+    }
 
-    document.getElementById('reject-draw').addEventListener('click', () => {
-        socket.emit('drawResponse', { roomCode: currentRoomCode, accepted: false });
-        closeModal();
-    });
+    const rejectBtn = document.getElementById('reject-draw');
+    if (rejectBtn) {
+        rejectBtn.addEventListener('click', () => {
+            socket.emit('drawResponse', { roomCode: currentRoomCode, accepted: false });
+            closeModal();
+        });
+    }
 });
 
 socket.on('drawRejected', () => {

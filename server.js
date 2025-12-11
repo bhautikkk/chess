@@ -139,6 +139,12 @@ io.on('connection', (socket) => {
         }
     });
 
+    // WebRTC Signaling
+    socket.on('signal', (data) => {
+        // data = { roomCode, signalData }
+        socket.to(data.roomCode).emit('signal', data.signalData);
+    });
+
     socket.on('disconnect', () => {
         console.log('user disconnected', socket.id);
         // Handle cleanup if needed, or notify opponent
