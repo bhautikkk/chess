@@ -240,25 +240,40 @@ let currentReviewMoveIndex = -1; // -1 = start position
 let stockfish = null;
 let evaluations = {}; // Map moveIndex -> score string
 
+// Debug helper
+function logToScreen(msg) {
+    const debugDiv = document.getElementById('debug-log');
+    if (debugDiv) {
+        debugDiv.style.display = 'block';
+        debugDiv.innerText += msg + "\n";
+    }
+    console.log(msg);
+}
+
 // Initialize Stockfish
 try {
+    logToScreen("Initializing App...");
+    if (typeof Chess === 'undefined') {
+        logToScreen("ERROR: Chess.js library not loaded!");
+    } else {
+        logToScreen("Chess.js loaded.");
+    }
+
     if (typeof Stockfish === 'function') {
+        logToScreen("Stockfish function found. Starting engine...");
         Stockfish().then(sf => {
             stockfish = sf;
             stockfish.addMessageListener(handleStockfishMessage);
-            console.log("Stockfish initialized");
+            logToScreen("Stockfish Engine Ready!");
             document.getElementById('review-status').innerText = "Engine ready!";
         }).catch(err => {
-            console.error("Stockfish Init Error:", err);
-            alert("Stockfish failed to load: " + err);
+            logToScreen("Stockfish Init Error: " + err);
         });
     } else {
-        console.error("Stockfish variable not found.");
-        // alert("Stockfish not loaded. Check console."); 
-        // Commented alert to avoid annoyance if it loads late, but crucial for debugging now.
+        logToScreen("ERROR: Stockfish variable not found. Check if stockfish.js is loaded.");
     }
 } catch (e) {
-    console.error("Stockfish Critical Error:", e);
+    logToScreen("CRITICAL ERROR: " + e.message);
 }
 
 function handleStockfishMessage(line) {
@@ -297,9 +312,10 @@ const reviewBoardElement = document.getElementById('review-board');
 const reviewStatus = document.getElementById('review-status');
 
 startReviewBtn.addEventListener('click', () => {
-    console.log("Analyze Game clicked"); // Debug log
+    logToScreen("Analyze button clicked.");
     const pgn = pgnInput.value;
     if (!pgn) {
+        logToScreen("Error: No PGN entered.");
         alert("Please enter a PGN");
         return;
     }
@@ -321,6 +337,7 @@ startReviewBtn.addEventListener('click', () => {
         analyzeCurrentPosition();
 
     } catch (e) {
+        logToScreen("PGN Parse Error: " + e.message);
         console.error(e);
         alert("Error parsing PGN: " + e.message);
     }
