@@ -320,48 +320,65 @@ async function runFullAnalysis(moves) {
 
     els.status.innerText = `Analyzing 0/${moves.length}...`;
 
-    // 1. Analyze Initial Position first (optional, but good for context)
-    // For simplicity, assume start pos is 0.30 (white adv)
-    let prevEval = 30;
+    // 1. Initial Position Eval
+    let whiteScoreBefore = 30; // 0.30
 
     for (let i = 0; i < moves.length; i++) {
         const move = moves[i];
+        const playerColor = tempChess.turn(); // 'w' or 'b' BEFORE move
+
         tempChess.move(move);
         const fen = tempChess.fen();
+        const turnAfter = tempChess.turn(); // Side to move AFTER move
 
-        // Request Eval
-        const score = await getStockfishEval(fen);
+        // Request Eval (Score is always for side to move 'turnAfter')
+        const rawScore = await getStockfishEval(fen);
 
-        // Determine Logic (Relative to player who moved)
-        // If White moved, positive score is good.
-        // If Black moved, negative score is good.
+        // Convert to White Perspective
+        let whiteScoreAfter; // Score from White's POV
+        if (turnAfter === 'w') {
+            whiteScoreAfter = rawScore;
+        } else {
+            whiteScoreAfter = -rawScore;
+        }
 
-        // We need score from POV of player who JUST moved.
-        // If 'w' moved, huge positive is good.
-        // If 'b' moved, huge negative is good.
+        // Calculate Delta (How much did the moving player value CHANGE?)
+        // If White moved: We want After >= Before. Delta = After - Before.
+        // If Black moved: We want After <= Before (More negative). Delta = Before - After.
+        let delta;
+        if (playerColor === 'w') {
+            delta = whiteScoreAfter - whiteScoreBefore;
+        } else {
+            delta = whiteScoreBefore - whiteScoreAfter;
+        }
 
-        let moveScore = (move.color === 'w') ? score : -score;
-        let prevMoveScore = (move.color === 'w') ? prevEval : -prevEval;
+        // Classification
+        let type = "best";
 
-        let diff = moveScore - prevMoveScore;
+        // Book moves (First 5 moves generally) - Simplistic
+        if (i < 8 && delta > -30) {
+            type = 'book';
+        } else {
+            // New thresholds
+            if (delta > 50) type = "great"; // Found a winning resource?
+            else if (delta >= -10) type = "best"; // Solid
+            else if (delta >= -25) type = "excellent";
+            else if (delta >= -50) type = "good";
+            else if (delta >= -100) type = "inaccuracy"; // -1.0 pawn loss
+            else if (delta >= -250) type = "mistake"; // -2.5 pawn loss
+            else type = "blunder";
 
-        // Classify
-        let type = "good";
-        // Simple Heuristic
-        if (diff > 50) type = "great";      // Gained advantage
-        else if (diff > 20) type = "excellent";
-        else if (diff > -20) type = "best"; // Maintained
-        else if (diff > -50) type = "inaccuracy";
-        else if (diff > -150) type = "mistake";
-        else type = "blunder";
+            // Winning cap / brilliant heuristic
+            if (delta > 150) type = "brilliant";
+        }
 
-        // Additional heuristic for Brilliant (sacrifice?)
-        // Random "Brilliant" for demo purposes on very high jumps or specific patterns
-        if (diff > 150) type = "brilliant";
+        // UI Fix: Map 'book' to 'best' styles for now if CSS missing
+        if (type === 'book') type = 'best';
 
-        counts[type]++;
-        analysisData.push({ eval: score, type: type });
-        prevEval = score;
+        if (counts[type] !== undefined) counts[type]++;
+
+        analysisData.push({ eval: whiteScoreAfter, type: type });
+        whiteScoreBefore = whiteScoreAfter;
 
         // Update Progress UI
         els.status.innerText = `Analyzing ${i + 1}/${moves.length}...`;
@@ -373,9 +390,33 @@ async function runFullAnalysis(moves) {
     isAnalyzing = false;
     els.status.innerText = "Analysis Complete.";
 
-    // Calc accuracy (Naive placeholder)
-    els.whiteAcc.innerText = (Math.random() * (95 - 70) + 70).toFixed(1);
-    els.blackAcc.innerText = (Math.random() * (95 - 70) + 70).toFixed(1);
+    // Calculate Accuracy based on Mistakes/Blunders
+    const calcAcc = (color) => {
+        let demerits = 0;
+        let moveCount = 0;
+        analysisData.forEach((d, idx) => {
+            // idx is move index. Even = White, Odd = Black
+            const isWhiteKey = (idx % 2 === 0);
+            if ((color === 'w' && isWhiteKey) || (color === 'b' && !isWhiteKey)) {
+                moveCount++;
+                if (d.type === 'blunder') demerits += 4; // Weighted penalty
+                else if (d.type === 'mistake') demerits += 2;
+                else if (d.type === 'inaccuracy') demerits += 0.5;
+                // else if (d.type === 'good') demerits += 0;
+            }
+        });
+        if (moveCount === 0) return "100";
+        // Max demerit per move is 4. Accuracy = 100 - (avg_demerits * 25)? 
+        // Let's say max penalty is 100%. 
+        let avgPenalty = demerits / moveCount; // 0 to 4
+        let acc = 100 - (avgPenalty * 20); // Scale: if 1 blunder every move -> 20 acc.
+        if (acc < 0) acc = 0;
+        if (acc > 100) acc = 100;
+        return acc.toFixed(1);
+    };
+
+    els.whiteAcc.innerText = calcAcc('w');
+    els.blackAcc.innerText = calcAcc('b');
 
     // Go to start
     currentReviewMoveIndex = -1;
