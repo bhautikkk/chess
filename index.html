@@ -6,17 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chess</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="review.css">
-    <script>
-        window.onerror = function (msg, url, lineNo, columnNo, error) {
-            var debugDiv = document.getElementById('debug-log');
-            if (debugDiv) {
-                debugDiv.style.display = 'block';
-                debugDiv.innerText += "GLOBAL ERROR: " + msg + " at " + url + ":" + lineNo + "\n";
-            }
-            return false;
-        };
-    </script>
 </head>
 
 <body>
@@ -24,8 +13,7 @@
     <div id="menu-screen" class="screen active">
         <h1>Chess</h1>
         <div class="menu-buttons">
-            <button id="play-btn" class="menu-btn">Play with Friend</button>
-            <button id="review-btn" class="menu-btn">Game Review</button>
+            <button id="play-btn" class="menu-btn">Play Two Player</button>
         </div>
     </div>
 
@@ -43,109 +31,8 @@
         </div>
     </div>
 
-    <!-- Review Screen -->
-    <div id="review-screen" class="screen hidden">
-        <div class="review-container">
-            <!-- Review Sidebar -->
-            <div class="review-sidebar">
-                <div class="review-header">
-                    <h2>Game Review</h2>
-                    <button id="back-menu-review-btn" class="close-review-btn">X</button>
-                </div>
-
-                <div id="setup-review">
-                    <textarea id="pgn-input" placeholder="Paste PGN here..."></textarea>
-                    <button id="start-review-btn" class="action-btn">Start Review</button>
-                    <!-- Small debug text -->
-                    <div id="debug-log" class="debug-box"
-                        style="display:none;font-size:10px;color:yellow;background:#000;padding:5px;"></div>
-                </div>
-
-                <div id="analysis-panel" class="hidden">
-                    <div class="accuracy-section">
-                        <div class="acc-card white-acc">
-                            <span class="acc-val" id="acc-white">--</span>
-                            <span class="acc-label">White Accuracy</span>
-                        </div>
-                        <div class="acc-card black-acc">
-                            <span class="acc-val" id="acc-black">--</span>
-                            <span class="acc-label">Black Accuracy</span>
-                        </div>
-                    </div>
-
-                    <div class="move-list-area">
-                        <div class="class-row brilliant">
-                            <div class="icon-box" style="background:#1baca6">!!</div>
-                            <div class="label">Brilliant</div>
-                            <div class="count" id="count-brilliant">0</div>
-                        </div>
-                        <div class="class-row great">
-                            <div class="icon-box" style="background:#5c8bb0">!</div>
-                            <div class="label">Great</div>
-                            <div class="count" id="count-great">0</div>
-                        </div>
-                        <div class="class-row best">
-                            <div class="icon-box" style="background:#96bc4b">★</div>
-                            <div class="label">Best</div>
-                            <div class="count" id="count-best">0</div>
-                        </div>
-                        <div class="class-row excellent">
-                            <div class="icon-box" style="background:#96bc4b">✓</div>
-                            <div class="label">Excellent</div>
-                            <div class="count" id="count-excellent">0</div>
-                        </div>
-                        <div class="class-row good">
-                            <div class="icon-box" style="background:#9ea8a3">good</div>
-                            <div class="label">Good</div>
-                            <div class="count" id="count-good">0</div>
-                        </div>
-                        <div class="class-row inaccuracy">
-                            <div class="icon-box" style="background:#f0c15c">?!</div>
-                            <div class="label">Inaccuracy</div>
-                            <div class="count" id="count-inaccuracy">0</div>
-                        </div>
-                        <div class="class-row mistake">
-                            <div class="icon-box" style="background:#e6912c">?</div>
-                            <div class="label">Mistake</div>
-                            <div class="count" id="count-mistake">0</div>
-                        </div>
-                        <div class="class-row blunder">
-                            <div class="icon-box" style="background:#fa412d">??</div>
-                            <div class="label">Blunder</div>
-                            <div class="count" id="count-blunder">0</div>
-                        </div>
-                    </div>
-
-                    <div class="classification-summary" id="move-classification-text"
-                        style="margin: 10px 0; font-style: italic; color: #ccc;">
-                        Waiting for analysis...
-                    </div>
-
-                    <div class="review-controls">
-                        <button id="review-prev-btn" class="nav-btn">◄</button>
-                        <button id="review-flip-btn" class="nav-btn">Flip</button>
-                        <button id="review-next-btn" class="nav-btn">►</button>
-                    </div>
-                    <div id="review-status" style="font-size: 0.8rem; color: #888;">Ready</div>
-                </div>
-            </div>
-
-            <!-- Board Area -->
-            <div class="review-board-area">
-                <div class="board" id="review-board"></div>
-                <!-- Eval Bar -->
-                <div id="eval-bar-container">
-                    <div id="eval-fill"></div>
-                    <span id="eval-score">0.0</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Logic -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-    <script src="game-logic.js"></script> <!-- Renamed from chess.js -->
-    <script src="stockfish.js" type="text/javascript"></script> <!-- Ensure Stockfish is loaded -->
+    <script src="game-logic.js"></script>
     <script src="script.js"></script>
 </body>
 
