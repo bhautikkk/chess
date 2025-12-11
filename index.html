@@ -6,23 +6,88 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chess</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .hidden {
+            display: none !important;
+        }
+
+        .screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+        }
+
+        .menu-btn,
+        .action-btn {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        input {
+            padding: 10px;
+            font-size: 1rem;
+            margin: 10px;
+        }
+    </style>
 </head>
 
 <body>
     <!-- Menu Screen -->
     <div id="menu-screen" class="screen active">
         <h1>Chess</h1>
-        <div class="menu-buttons">
-            <button id="play-btn" class="menu-btn">Play Two Player</button>
+        <div class="menu-content">
+            <input type="text" id="name-input" placeholder="Enter Your Name"
+                style="padding: 12px; font-size: 1.1rem; width: 250px; margin-bottom: 20px; border-radius: 5px; border: 1px solid #ccc;">
+
+            <div id="menu-error" style="color: #ff6b6b; margin-bottom: 10px; height: 20px; font-weight: bold;"></div>
+
+            <div class="menu-buttons">
+                <button id="play-local-btn" class="menu-btn">Play Local (2P)</button>
+                <button id="create-room-btn" class="menu-btn">Create Room</button>
+                <div style="margin-top: 20px;">
+                    <input type="text" id="room-code-input" placeholder="Enter Room Code" maxlength="6">
+                    <button id="join-room-btn" class="action-btn">Join Room</button>
+                </div>
+            </div>
         </div>
+    </div>
+
+    <!-- Waiting Screen -->
+    <div id="waiting-screen" class="screen hidden">
+        <h2>Waiting for Opponent...</h2>
+        <p>Your Room Code:</p>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <h1 id="display-room-code" style="font-size: 3rem; color: yellow; margin: 0;">------</h1>
+            <button id="copy-code-btn" class="secondary-btn"
+                style="padding: 5px 10px; font-size: 1rem; cursor: pointer;">Copy</button>
+        </div>
+        <p>Share this code with your friend.</p>
+        <button id="cancel-wait-btn" class="secondary-btn">Cancel</button>
     </div>
 
     <!-- Game Screen -->
     <div id="game-screen" class="screen hidden">
         <div class="game-container">
-            <button id="back-menu-btn" class="secondary-btn">Back to Menu</button>
-            <h1>Chess</h1>
-            <div class="status" id="status">White's Turn</div>
+            <div id="game-header"
+                style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 10px; padding: 0 10px;">
+                <div id="room-info" style="color: #aaa; font-size: 0.9rem;">Room: Local</div>
+                <button id="back-menu-btn" class="secondary-btn"
+                    style="padding: 5px 10px; font-size: 0.8rem;">Back</button>
+            </div>
+
+            <div class="players-info"
+                style="display: flex; justify-content: space-between; width: 400px; margin-bottom: 5px; color: white;">
+                <span id="player-top" style="font-weight: bold;">Black</span>
+                <span id="player-bottom" style="font-weight: bold;">White</span>
+            </div>
+
+            <div class="status" id="status" style="margin-bottom: 15px; font-size: 1.2rem; color: #4CAF50;">White's Turn
+            </div>
             <div class="board" id="board"></div>
             <div class="controls">
                 <button id="reset-btn">New Game</button>
@@ -32,6 +97,7 @@
     </div>
 
     <!-- Logic -->
+    <script src="/socket.io/socket.io.js"></script>
     <script src="game-logic.js"></script>
     <script src="script.js"></script>
 </body>

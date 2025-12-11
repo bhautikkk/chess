@@ -1,39 +1,208 @@
 
 const game = new ChessGame();
+const socket = io(); // Connect to server
+
+// UI Elements
 const boardElement = document.getElementById('board');
 const statusElement = document.getElementById('status');
 const resetBtn = document.getElementById('reset-btn');
 const flipBtn = document.getElementById('flip-btn');
+const roomInfoElement = document.getElementById('room-info');
+const playerTopElement = document.getElementById('player-top');
+const playerBottomElement = document.getElementById('player-bottom');
+const menuErrorElement = document.getElementById('menu-error');
 
 // Screens
 const menuScreen = document.getElementById('menu-screen');
 const gameScreen = document.getElementById('game-screen');
+const waitingScreen = document.getElementById('waiting-screen');
 
-// Menu Buttons
-const playBtn = document.getElementById('play-btn');
-const backMenuBtn = document.getElementById('back-menu-btn');
+// Logic State
+let selectedSquare = null;
+let validMoves = [];
+let isFlipped = false;
+let gameMode = 'local'; // 'local', 'multiplayer'
+let playerColor = 'w'; // 'w' or 'b' (for multiplayer)
+let currentRoomCode = null;
+let navElements = {
+    myName: "Me",
+    opponentName: "Opponent",
+    whiteName: "White",
+    blackName: "Black"
+};
 
+// Screen Handling
 function showScreen(screen) {
-    [menuScreen, gameScreen].forEach(s => {
+    [menuScreen, gameScreen, waitingScreen].forEach(s => {
         s.classList.add('hidden');
         s.classList.remove('active');
     });
     screen.classList.remove('hidden');
     screen.classList.add('active');
+
+    // Clear error when switching screens
+    if (menuErrorElement) menuErrorElement.innerText = '';
 }
 
-playBtn.addEventListener('click', () => {
+function showError(msg) {
+    if (menuErrorElement) {
+        menuErrorElement.innerText = msg;
+        // Optionally auto-clear after a few seconds
+        setTimeout(() => {
+            menuErrorElement.innerText = '';
+        }, 3000);
+    } else {
+        alert(msg); // Fallback
+    }
+}
+
+// --- Menu Events ---
+
+// Play Local
+document.getElementById('play-local-btn').addEventListener('click', () => {
+    const name = document.getElementById('name-input').value.trim() || "Player 1";
+    gameMode = 'local';
+    playerColor = 'w';
+    game.reset();
+    isFlipped = false;
+    currentRoomCode = null;
+
+    // Set Local Names
+    navElements.whiteName = name;
+    navElements.blackName = "Player 2";
+
+    updateGameInfoHeader(true);
+    showScreen(gameScreen);
+    renderBoardSimple();
+    resetBtn.style.display = 'inline-block';
+});
+
+// Create Room
+document.getElementById('create-room-btn').addEventListener('click', () => {
+    const name = document.getElementById('name-input').value.trim();
+    if (!name) {
+        showError("Please enter your name first!");
+        return;
+    }
+    socket.emit('createRoom', name);
+});
+
+// Join Room
+document.getElementById('join-room-btn').addEventListener('click', () => {
+    const name = document.getElementById('name-input').value.trim();
+    if (!name) {
+        showError("Please enter your name first!");
+        return;
+    }
+    const code = document.getElementById('room-code-input').value;
+    if (code && code.length === 6) {
+        socket.emit('joinRoom', { code: code, name: name });
+    } else {
+        showError("Please enter a valid 6-digit code.");
+    }
+});
+
+// Back Buttons
+document.getElementById('back-menu-btn').addEventListener('click', () => {
+    if (gameMode === 'multiplayer') {
+        location.reload();
+    } else {
+        showScreen(menuScreen);
+    }
+});
+document.getElementById('cancel-wait-btn').addEventListener('click', () => {
+    location.reload();
+});
+
+// Copy Code Button
+document.getElementById('copy-code-btn').addEventListener('click', () => {
+    const code = document.getElementById('display-room-code').innerText;
+    if (code) {
+        navigator.clipboard.writeText(code).then(() => {
+            const btn = document.getElementById('copy-code-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "Copied!";
+            setTimeout(() => btn.innerText = originalText, 2000);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            showError("Failed to copy code.");
+        });
+    }
+});
+
+// --- Audio ---
+const moveSound = new Audio('move.mp3');
+
+function playMoveSound() {
+    moveSound.currentTime = 0;
+    moveSound.play().catch(e => console.log("Audio play failed: ", e));
+}
+
+// --- Socket Events ---
+
+socket.on('roomCreated', (roomCode) => {
+    currentRoomCode = roomCode;
+    gameMode = 'multiplayer';
+    playerColor = 'w';
+    document.getElementById('display-room-code').innerText = roomCode;
+    showScreen(waitingScreen);
+});
+
+socket.on('gameStart', (data) => {
+    // data = { white: socketId, whiteName, black: socketId, blackName }
+    gameMode = 'multiplayer';
+    currentRoomCode = currentRoomCode || document.getElementById('room-code-input').value;
+
+    // Store Names
+    navElements.whiteName = data.whiteName || "White";
+    navElements.blackName = data.blackName || "Black";
+
+    if (socket.id === data.black) {
+        playerColor = 'b';
+        isFlipped = true;
+    } else {
+        playerColor = 'w';
+        isFlipped = false;
+    }
+
+    game.reset();
+    updateGameInfoHeader(false);
+    resetBtn.style.display = 'none';
     showScreen(gameScreen);
     renderBoardSimple();
 });
 
-backMenuBtn.addEventListener('click', () => {
-    showScreen(menuScreen);
+socket.on('move', (move) => {
+    game.makeMoveInternal(move);
+    playMoveSound(); // Play sound on opponent move
+    renderBoardSimple();
+    checkGameOver();
 });
 
-let selectedSquare = null;
-let validMoves = [];
-let isFlipped = false;
+socket.on('error', (msg) => {
+    showError(msg);
+});
+
+
+// --- Game Logic Interface ---
+
+function updateGameInfoHeader(isLocal) {
+    if (isLocal) {
+        roomInfoElement.innerText = "Room: Local";
+        playerBottomElement.innerText = navElements.whiteName + " (White)";
+        playerTopElement.innerText = navElements.blackName + " (Black)";
+    } else {
+        roomInfoElement.innerText = `Room: ${currentRoomCode}`;
+        if (playerColor === 'w') {
+            playerBottomElement.innerText = navElements.whiteName; // Me
+            playerTopElement.innerText = navElements.blackName; // Opponent
+        } else {
+            playerBottomElement.innerText = navElements.blackName; // Me
+            playerTopElement.innerText = navElements.whiteName; // Opponent
+        }
+    }
+    updateStatus();
+}
 
 function renderBoardSimple() {
     boardElement.innerHTML = '';
@@ -86,28 +255,38 @@ function renderBoardSimple() {
 
 
 function onSquareClick(index) {
+    if (gameMode === 'multiplayer' && game.turn !== playerColor) {
+        return;
+    }
+
     const piece = game.getPiece(index);
     const isPlayersTurnPiece = piece && piece.color === game.turn;
 
-    // If clicking a valid move target
+    if (gameMode === 'multiplayer' && isPlayersTurnPiece && piece.color !== playerColor) {
+        return;
+    }
+
     const move = validMoves.find(m => m.to === index);
 
     if (move) {
         game.makeMove(move);
+        // playMoveSound(); // Removed as per user request (only hear opponent)
+
+        if (gameMode === 'multiplayer') {
+            socket.emit('move', {
+                roomCode: currentRoomCode,
+                move: move
+            });
+        }
+
         selectedSquare = null;
         validMoves = [];
         renderBoardSimple();
-
-        // Check for game over
-        if (game.isCheckmate()) {
-            setTimeout(() => alert(`Checkmate! ${game.turn === 'w' ? 'Black' : 'White'} wins!`), 100);
-        }
+        checkGameOver();
         return;
     }
 
-    // Select piece
     if (isPlayersTurnPiece) {
-        // Toggle selection
         if (selectedSquare === index) {
             selectedSquare = null;
             validMoves = [];
@@ -117,15 +296,25 @@ function onSquareClick(index) {
         }
         renderBoardSimple();
     } else {
-        // Deselect if clicking empty or enemy not as capture
         selectedSquare = null;
         validMoves = [];
         renderBoardSimple();
     }
 }
 
+function checkGameOver() {
+    if (game.isCheckmate()) {
+        const winnerColor = game.turn === 'w' ? 'Black' : 'White';
+        const winnerName = winnerColor === 'White' ? navElements.whiteName : navElements.blackName;
+        setTimeout(() => alert(`Checkmate! ${winnerName} wins!`), 100);
+    }
+}
+
 function updateStatus() {
-    let status = game.turn === 'w' ? "White's Turn" : "Black's Turn";
+    const activeColor = game.turn === 'w' ? 'White' : 'Black';
+    const activeName = activeColor === 'White' ? navElements.whiteName : navElements.blackName;
+
+    let status = `${activeName}'s Turn`;
     if (game.isKingInCheck(game.turn)) {
         status += " (Check!)";
     }
@@ -137,6 +326,7 @@ resetBtn.addEventListener('click', () => {
     selectedSquare = null;
     validMoves = [];
     isFlipped = false;
+    currentRoomCode = null;
     renderBoardSimple();
 });
 
