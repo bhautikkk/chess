@@ -1,37 +1,257 @@
-/* CSS for Chess Game */
-textarea#pgn-input {
-    width: 100%;
-    height: 100px;
-    margin-bottom: 10px;
-    padding: 10px;
+/* Review Screen Layout */
+#review-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #312e2b;
+    /* Chess.com dark bg */
+    color: #fff;
+    padding: 20px;
+}
+
+.review-container {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    width: 90%;
+    max-width: 1200px;
+    height: 90vh;
+}
+
+/* Sidebar */
+.review-sidebar {
+    width: 350px;
+    background-color: #262421;
     border-radius: 5px;
-    border: 1px solid #ccc;
-    font-family: monospace;
-    background: rgba(255, 255, 255, 0.9);
-    color: black;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.close-review-btn {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.close-review-btn:hover {
+    color: #fff;
 }
 
 #setup-review {
-    width: 100%;
-    max-width: 400px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-}
-
-#review-board-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     gap: 10px;
 }
 
-#eval-bar {
-    margin-top: 10px;
-    font-weight: bold;
+#pgn-input {
+    background: #3e3c39;
+    border: 1px solid #555;
     color: #fff;
-    font-size: 1.2rem;
-    background: rgba(0, 0, 0, 0.5);
-    padding: 5px 15px;
+    padding: 10px;
+    border-radius: 4px;
+    resize: none;
+    height: 100px;
+}
+
+.action-btn {
+    background: #81b64c;
+    color: white;
+    border: none;
+    padding: 15px;
+    font-size: 1.1rem;
+    font-weight: bold;
     border-radius: 5px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 0 #5c8734;
+}
+
+.action-btn:active {
+    transform: translateY(4px);
+    box-shadow: none;
+}
+
+/* Analysis Panel */
+.hidden {
+    display: none !important;
+}
+
+.accuracy-section {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.acc-card {
+    flex: 1;
+    background: #3e3c39;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.acc-val {
+    display: block;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.acc-label {
+    font-size: 0.8rem;
+    color: #aaa;
+}
+
+.white-acc .acc-val {
+    color: #fff;
+}
+
+.black-acc .acc-val {
+    color: #ccc;
+}
+
+.move-list-area {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 20px;
+}
+
+.class-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px;
+    border-radius: 3px;
+}
+
+.icon-box {
+    width: 25px;
+    height: 25px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    font-size: 0.9rem;
+}
+
+.label {
+    flex: 1;
+    color: #ddd;
+}
+
+.count {
+    color: #fff;
+    font-weight: bold;
+}
+
+/* Controls */
+.review-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid #444;
+}
+
+.nav-btn {
+    background: #454341;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.nav-btn:hover {
+    background: #555;
+}
+
+/* Board Area */
+.review-board-area {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    background: #21201d;
+    /* Slightly darker than container */
+    border-radius: 5px;
+}
+
+#review-board {
+    width: 600px;
+    height: 600px;
+}
+
+/* Eval Bar */
+#eval-bar-container {
+    width: 30px;
+    height: 600px;
+    background: #444;
+    margin-left: 20px;
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column-reverse;
+    /* Bottom up */
+}
+
+#eval-fill {
+    width: 100%;
+    height: 50%;
+    background: #fff;
+    transition: height 0.5s ease;
+}
+
+#eval-score {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #000;
+    font-weight: bold;
+    font-size: 10px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 2px;
+    border-radius: 3px;
+    z-index: 10;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .review-container {
+        flex-direction: column-reverse;
+        height: auto;
+    }
+
+    .review-sidebar {
+        width: 100%;
+        height: 300px;
+    }
+
+    #review-board {
+        width: 100%;
+        max-width: 400px;
+        height: 400px;
+        /* Square */
+    }
+
+    #eval-bar-container {
+        display: none;
+        /* Hide eval bar on mobile for now */
+    }
 }
