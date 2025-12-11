@@ -7,16 +7,10 @@
     <title>Chess</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="review.css">
-    <link rel="stylesheet" href="review.css">
     <script>
         window.onerror = function (msg, url, lineNo, columnNo, error) {
             var debugDiv = document.getElementById('debug-log');
-            if (!debugDiv) {
-                // If map not loaded yet, try to create it or just alert
-                // We'll wait for DOMContentLoaded usually, but critical errors might happen before.
-                // Let's store it to show later if needed? 
-                // Or just console.error
-            } else {
+            if (debugDiv) {
                 debugDiv.style.display = 'block';
                 debugDiv.innerText += "GLOBAL ERROR: " + msg + " at " + url + ":" + lineNo + "\n";
             }
@@ -139,6 +133,7 @@
             <!-- Board Area -->
             <div class="review-board-area">
                 <div class="board" id="review-board"></div>
+                <!-- Eval Bar -->
                 <div id="eval-bar-container">
                     <div id="eval-fill"></div>
                     <span id="eval-score">0.0</span>
