@@ -1,0 +1,193 @@
+:root {
+    --light-square: #f0d9b5;
+    --dark-square: #b58863;
+    --highlight: rgba(255, 255, 0, 0.5);
+    --selected: rgba(20, 85, 30, 0.5);
+    --bg-color: #302e2b;
+    --text-color: #ffffff;
+    --primary-color: #81b64c;
+    --primary-hover: #a3d160;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.screen {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: opacity 0.3s ease;
+}
+
+.hidden {
+    display: none !important;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* Menu Styles */
+#menu-screen {
+    background: linear-gradient(135deg, #2b2b2b 0%, #1a1a1a 100%);
+}
+
+#menu-screen h1 {
+    font-size: 4rem;
+    margin-bottom: 2rem;
+    text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.menu-btn {
+    padding: 15px 40px;
+    font-size: 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.menu-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Game Container - keep mainly same but adapted for screen */
+.game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+h1 {
+    margin: 0;
+    font-size: 2.5rem;
+}
+
+.status {
+    font-size: 1.2rem;
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.board {
+    width: 600px;
+    height: 600px;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    border: 5px solid #4a3d34;
+    user-select: none;
+    background-color: var(--dark-square);
+}
+
+@media (max-width: 650px) {
+    .board {
+        width: 90vw;
+        height: 90vw;
+    }
+}
+
+.square {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+}
+
+.square.light {
+    background-color: var(--light-square);
+}
+
+.square.dark {
+    background-color: var(--dark-square);
+}
+
+.square.selected {
+    background-color: var(--selected) !important;
+}
+
+.square.highlight::after {
+    content: '';
+    width: 30%;
+    height: 30%;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    position: absolute;
+}
+
+.square.highlight-capture {
+    box-shadow: inset 0 0 0 4px rgba(0, 0, 0, 0.2);
+}
+
+.piece {
+    width: 90%;
+    height: 90%;
+    background-size: cover;
+    background-position: center;
+    pointer-events: none;
+    transition: transform 0.1s ease;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: var(--primary-hover);
+}
+
+.secondary-btn {
+    background-color: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    margin-bottom: 10px;
+    align-self: flex-start;
+}
+
+.secondary-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}

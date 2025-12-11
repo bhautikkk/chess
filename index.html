@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="review.css">
+</head>
+
+<body>
+    <!-- Menu Screen -->
+    <div id="menu-screen" class="screen active">
+        <h1>Chess</h1>
+        <div class="menu-buttons">
+            <button id="play-btn" class="menu-btn">Play with Friend</button>
+            <button id="review-btn" class="menu-btn">Game Review</button>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen hidden">
+        <div class="game-container">
+            <button id="back-menu-btn" class="secondary-btn">Back to Menu</button>
+            <h1>Chess</h1>
+            <div class="status" id="status">White's Turn</div>
+            <div class="board" id="board"></div>
+            <div class="controls">
+                <button id="reset-btn">New Game</button>
+                <button id="flip-btn">Flip Board</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Screen -->
+    <div id="review-screen" class="screen hidden">
+        <div class="game-container">
+            <button id="back-menu-review-btn" class="secondary-btn">Back to Menu</button>
+            <h1>Game Review</h1>
+            <div id="setup-review">
+                <textarea id="pgn-input" placeholder="Paste PGN here..."></textarea>
+                <button id="start-review-btn" class="menu-btn">Analyze Game</button>
+            </div>
+            <div id="review-board-container" class="hidden">
+                <div class="status" id="review-status">Processing...</div>
+                <div class="board" id="review-board"></div> <!-- Separate board for review to avoid state conflicts -->
+                <div class="controls">
+                    <button id="review-prev-btn">Previous</button>
+                    <button id="review-next-btn">Next</button>
+                    <button id="review-flip-btn">Flip Board</button>
+                </div>
+                <div id="eval-bar">Evaluation: <span id="eval-score">-</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logic -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="game-logic.js"></script> <!-- Renamed from chess.js -->
+    <script src="stockfish.js" type="text/javascript"></script> <!-- Ensure Stockfish is loaded -->
+    <script src="script.js"></script>
+</body>
+
+</html>
