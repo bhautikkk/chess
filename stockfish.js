@@ -1054,5 +1054,6 @@
                             self.close()
                         } catch (e) { }
                 }
-        )) : "object" == typeof document && document.currentScript ? document.currentScript._exports = t() : t())
+        )) : "object" == typeof document && document.currentScript ? document.currentScript._exports = t() : (self.Stockfish = t(), t())
+    )
 }();

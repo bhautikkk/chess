@@ -241,11 +241,25 @@ let stockfish = null;
 let evaluations = {}; // Map moveIndex -> score string
 
 // Initialize Stockfish
-Stockfish().then(sf => {
-    stockfish = sf;
-    stockfish.addMessageListener(handleStockfishMessage);
-    console.log("Stockfish initialized");
-});
+try {
+    if (typeof Stockfish === 'function') {
+        Stockfish().then(sf => {
+            stockfish = sf;
+            stockfish.addMessageListener(handleStockfishMessage);
+            console.log("Stockfish initialized");
+            document.getElementById('review-status').innerText = "Engine ready!";
+        }).catch(err => {
+            console.error("Stockfish Init Error:", err);
+            alert("Stockfish failed to load: " + err);
+        });
+    } else {
+        console.error("Stockfish variable not found.");
+        // alert("Stockfish not loaded. Check console."); 
+        // Commented alert to avoid annoyance if it loads late, but crucial for debugging now.
+    }
+} catch (e) {
+    console.error("Stockfish Critical Error:", e);
+}
 
 function handleStockfishMessage(line) {
     // console.log("SF:", line);
@@ -283,6 +297,7 @@ const reviewBoardElement = document.getElementById('review-board');
 const reviewStatus = document.getElementById('review-status');
 
 startReviewBtn.addEventListener('click', () => {
+    console.log("Analyze Game clicked"); // Debug log
     const pgn = pgnInput.value;
     if (!pgn) {
         alert("Please enter a PGN");
