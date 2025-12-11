@@ -73,33 +73,44 @@
     <!-- Game Screen -->
     <div id="game-screen" class="screen hidden">
         <div class="game-container">
-            <div id="game-header"
-                style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 10px; padding: 0 10px;">
-                <div id="room-info" style="color: #aaa; font-size: 0.9rem;">Room: Local</div>
-                <button id="back-menu-btn" class="secondary-btn"
-                    style="padding: 5px 10px; font-size: 0.8rem;">Back</button>
-            </div>
+            <div id="game-header" <!-- Header: Room Info & Opponent -->
+                <div class="game-header">
+                    <button id="back-menu-btn" class="btn-secondary">Menu</button>
+                    <div id="room-info" class="player-info">Room: -</div>
+                    <div id="player-top" class="player-info">Opponent</div>
+                </div>
 
-            <div class="players-info"
-                style="display: flex; justify-content: space-between; width: 400px; margin-bottom: 5px; color: white;">
-                <span id="player-top" style="font-weight: bold;">Black</span>
-                <span id="player-bottom" style="font-weight: bold;">White</span>
-            </div>
+                <!-- Status -->
+                <div id="status" class="status">White's Turn</div>
 
-            <div class="status" id="status" style="margin-bottom: 15px; font-size: 1.2rem; color: #4CAF50;">White's Turn
-            </div>
-            <div class="board" id="board"></div>
-            <div class="controls">
-                <button id="reset-btn">New Game</button>
-                <button id="flip-btn">Flip Board</button>
+                <!-- Board -->
+                <div id="board" class="board"></div>
+
+                <!-- Footer: Me & Controls -->
+                <div class="game-header" style="justify-content: center; margin-bottom: 5px;">
+                    <div id="player-bottom" class="player-info">Me</div>
+                </div>
+
+                <div class="controls">
+                    <button id="flip-btn" class="btn-secondary">Flip</button>
+                    <button id="reset-btn" class="btn-secondary">Restart (Local)</button>
+
+                    <!-- Multiplayer Controls -->
+                    <button id="draw-btn" class="btn-draw" style="display:none;">½ Draw</button>
+                    <button id="resign-btn" class="btn-resign" style="display:none;">🏳️ Resign</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Logic -->
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="game-logic.js"></script>
-    <script src="script.js"></script>
+        <!-- Modals Container -->
+        <div id="modal-container"></div>
+        <!-- Toast Container -->
+        <div id="toast-container"></div>
+
+        <!-- Logic -->
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="game-logic.js"></script>
+        <script src="script.js"></script>
 </body>
 
 </html>

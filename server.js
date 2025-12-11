@@ -76,6 +76,69 @@ io.on('connection', (socket) => {
         socket.to(data.roomCode).emit('move', data.move);
     });
 
+    // --- New Game Features ---
+
+    // Draw Offer
+    socket.on('offerDraw', (roomCode) => {
+        socket.to(roomCode).emit('drawOffer');
+    });
+
+    // Draw Response
+    socket.on('drawResponse', (data) => {
+        // data = { roomCode, accepted: boolean }
+        if (data.accepted) {
+            io.to(data.roomCode).emit('gameOver', { reason: 'draw', details: 'Agreed Draw' });
+        } else {
+            socket.to(data.roomCode).emit('drawRejected');
+        }
+    });
+
+    // Resign
+    socket.on('resign', (roomCode) => {
+        // The one who requests resign loses. The OTHER wins.
+        // We can just tell clients "Resignation" and let them figure out who resigned based on socket.id if needed, 
+        // OR just broadcast who resigned.
+        socket.to(roomCode).emit('gameOver', { reason: 'resignation', winner: 'opponent' }); // Sender lost
+        socket.emit('gameOver', { reason: 'resignation', winner: 'you_lost' }); // Sender lost
+    });
+
+    // Rematch Logic
+    // We need to track who requested rematch
+    socket.on('requestRematch', (roomCode) => {
+        const room = rooms[roomCode];
+        if (!room) return;
+
+        if (!room.rematchRequests) {
+            room.rematchRequests = new Set();
+        }
+        room.rematchRequests.add(socket.id);
+
+        if (room.rematchRequests.size >= 2) {
+            // Both accepted
+            room.rematchRequests.clear();
+
+            // Swap colors for variety? Or keep same. Let's keep same for simplicity first, or swap.
+            // Let's Swap!
+            const temp = room.white;
+            room.white = room.black;
+            room.black = temp;
+
+            const tempName = room.whiteName;
+            room.whiteName = room.blackName;
+            room.blackName = tempName;
+
+            io.to(roomCode).emit('gameStart', {
+                white: room.white,
+                whiteName: room.whiteName,
+                black: room.black,
+                blackName: room.blackName
+            });
+        } else {
+            // Notify opponent
+            socket.to(roomCode).emit('rematchRequested');
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log('user disconnected', socket.id);
         // Handle cleanup if needed, or notify opponent

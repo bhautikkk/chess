@@ -130,6 +130,69 @@ document.getElementById('copy-code-btn').addEventListener('click', () => {
     }
 });
 
+// --- Modal & Toast Helpers ---
+const modalContainer = document.getElementById('modal-container');
+const toastContainer = document.getElementById('toast-container');
+
+function showToast(msg, duration = 2000) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerText = msg;
+    toastContainer.appendChild(toast);
+    setTimeout(() => {
+        toast.remove();
+    }, duration);
+}
+
+function showModal(html) {
+    modalContainer.innerHTML = html;
+}
+
+function closeModal() {
+    modalContainer.innerHTML = '';
+}
+
+// --- Multiplayer Controls ---
+const drawBtn = document.getElementById('draw-btn');
+const resignBtn = document.getElementById('resign-btn');
+
+drawBtn.addEventListener('click', () => {
+    socket.emit('offerDraw', currentRoomCode);
+    showToast("Draw offer sent...", 2000);
+});
+
+resignBtn.addEventListener('click', () => {
+    if (confirm("Are you sure you want to resign?")) {
+        socket.emit('resign', currentRoomCode);
+    }
+});
+
+function showGameOverModal(title, message, isRematch = false) {
+    const html = `
+        <div class="modal-overlay">
+            <div class="modal-content">
+                <h2>${title}</h2>
+                <p>${message}</p>
+                <div class="modal-actions">
+                    <button id="rematch-btn">${isRematch ? "Accept Rematch" : "Rematch"}</button>
+                    <button id="main-menu-btn" class="btn-secondary" style="background:transparent; border:1px solid #777;">Main Menu</button>
+                </div>
+            </div>
+        </div>
+    `;
+    showModal(html);
+
+    document.getElementById('rematch-btn').addEventListener('click', (e) => {
+        socket.emit('requestRematch', currentRoomCode);
+        e.target.innerText = "Waiting for Opponent...";
+        e.target.disabled = true;
+    });
+
+    document.getElementById('main-menu-btn').addEventListener('click', () => {
+        location.reload();
+    });
+}
+
 // --- Audio ---
 const moveSound = new Audio('move.mp3');
 
@@ -165,19 +228,88 @@ socket.on('gameStart', (data) => {
         isFlipped = false;
     }
 
+    // UI Reset
     game.reset();
     updateGameInfoHeader(false);
     resetBtn.style.display = 'none';
+
+    // Show Multiplayer Buttons
+    drawBtn.style.display = 'inline-block';
+    resignBtn.style.display = 'inline-block';
+
+    closeModal(); // Clear any game over modals
     showScreen(gameScreen);
     renderBoardSimple();
+    showToast("Game Started!");
 });
 
 socket.on('move', (move) => {
     game.makeMoveInternal(move);
-    playMoveSound(); // Play sound on opponent move
+    playMoveSound();
     renderBoardSimple();
     checkGameOver();
 });
+
+// New Events
+socket.on('drawOffer', () => {
+    const html = `
+        <div class="modal-overlay">
+            <div class="modal-content">
+                <h2>Draw Offer</h2>
+                <p>${navElements.opponentName} offered a draw.</p>
+                <div class="modal-actions">
+                    <button id="accept-draw">Accept</button>
+                    <button id="reject-draw" class="btn-secondary" style="background:transparent; border:1px solid #777;">Reject</button>
+                </div>
+            </div>
+        </div>
+    `;
+    showModal(html);
+
+    document.getElementById('accept-draw').addEventListener('click', () => {
+        socket.emit('drawResponse', { roomCode: currentRoomCode, accepted: true });
+        closeModal();
+    });
+
+    document.getElementById('reject-draw').addEventListener('click', () => {
+        socket.emit('drawResponse', { roomCode: currentRoomCode, accepted: false });
+        closeModal();
+    });
+});
+
+socket.on('drawRejected', () => {
+    showToast("Opponent rejected your draw offer.", 2000);
+});
+
+socket.on('gameOver', (data) => {
+    // data = { reason: 'draw' | 'resignation', details, winner }
+    let title = "Game Over";
+    let msg = "";
+
+    if (data.reason === 'draw') {
+        title = "Draw";
+        msg = data.details || "Game ended in a draw.";
+    } else if (data.reason === 'resignation') {
+        const winner = data.winner === 'opponent' ? "You Won!" : "You Lost";
+        msg = `${winner} (by resignation)`;
+    }
+
+    showGameOverModal(title, msg);
+});
+
+socket.on('rematchRequested', () => {
+    const btn = document.getElementById('rematch-btn');
+    if (btn) {
+        if (btn.innerText !== "Waiting for Opponent...") {
+            btn.innerText = "Opponent wants to play again!";
+            btn.parentElement.parentElement.querySelector('p').innerText = "Opponent requested a rematch.";
+        }
+    } else {
+        // In case modal was closed or not visible (shouldn't happen in flow but safe to handle)
+        showGameOverModal("Rematch?", "Opponent wants to play again.", true);
+    }
+});
+
 
 socket.on('error', (msg) => {
     showError(msg);
@@ -306,7 +438,10 @@ function checkGameOver() {
     if (game.isCheckmate()) {
         const winnerColor = game.turn === 'w' ? 'Black' : 'White';
         const winnerName = winnerColor === 'White' ? navElements.whiteName : navElements.blackName;
-        setTimeout(() => alert(`Checkmate! ${winnerName} wins!`), 100);
+        // Replaced alert with Custom Modal
+        showGameOverModal("Checkmate!", `${winnerName} wins!`);
+    } else if (game.in_draw && game.in_draw()) { // Checking generic 50-move or stalemate if supported by logic
+        showGameOverModal("Draw", "Game ended in a draw (Stalemate/Repetition).");
     }
 }
 
