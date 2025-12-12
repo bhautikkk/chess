@@ -767,18 +767,105 @@ function onSquareClick(index) {
     }
 }
 
+// function checkGameOver() {
+//     // Note: Timeouts are handled by server event, but we can double check locally? 
+//     // Server has authority.
+//     if (game.isCheckmate()) {
+//         stopTimer();
+//         const winnerColor = game.turn === 'w' ? 'Black' : 'White';
+//         const loserColor = game.turn === 'w' ? 'w' : 'b';
+//         const winnerName = winnerColor === 'White' ? navElements.whiteName : navElements.blackName;
+
+//         triggerDustEffect(loserColor);
+
+//         // Show temporary result
+//         const myColor = gameMode === 'local' ? (game.turn === 'w' ? 'b' : 'w') : playerColor; 
+//         // Local mode weirdness: turn is loser's turn. so winner is opposite.
+//         // Actually simpler:
+//         // If I am white, and winner is White -> Win.
+//         // If I am white, and winner is Black -> Lose.
+
+//         let resultText = "";
+//         if (gameMode === 'local') {
+//             resultText = `${winnerName} Wins!`;
+//         } else {
+//             if ((playerColor === 'w' && winnerColor === 'White') || (playerColor === 'b' && winnerColor === 'Black')) {
+//                 resultText = "You Won!";
+//             } else {
+//                 resultText = "You Lost!";
+//             }
+//         }
+
+//         showResultPopup(resultText);
+
+//     } else if (game.in_draw && game.in_draw()) { // Checking generic 50-move or stalemate if supported by logic
+//         stopTimer();
+//         showGameOverModal("Draw", "Game ended in a draw (Stalemate/Repetition).");
+//     }
+// }
+
+function triggerDustEffect(losingColor) {
+    const squares = document.querySelectorAll('.square');
+    squares.forEach(sq => {
+        const piece = sq.querySelector('.piece');
+        if (piece) {
+            // Check piece color from background image or game state lookup
+            // Better: lookup game state using index
+            const index = parseInt(sq.dataset.index);
+            const p = game.board[index];
+            if (p && p.color === losingColor && p.type !== 'k') {
+                piece.classList.add('dust-piece');
+                // Randomize trajectory
+                const tx = (Math.random() - 0.5) * 200 + 'px';
+                const ty = (Math.random() - 0.5) * 200 + 'px';
+                const rot = (Math.random() - 0.5) * 360 + 'deg';
+                piece.style.setProperty('--tx', tx);
+                piece.style.setProperty('--ty', ty);
+                piece.style.setProperty('--rot', rot);
+
+                // Remove from DOM after animation
+                setTimeout(() => {
+                    piece.remove();
+                }, 1500);
+            }
+        }
+    });
+}
+
+function showResultPopup(text) {
+    const popup = document.createElement('div');
+    popup.className = 'result-popup';
+    popup.innerText = text;
+    document.body.appendChild(popup);
+
+    setTimeout(() => {
+        popup.remove();
+    }, 2500);
+}
+
 function checkGameOver() {
-    // Note: Timeouts are handled by server event, but we can double check locally? 
-    // Server has authority.
     if (game.isCheckmate()) {
         stopTimer();
         const winnerColor = game.turn === 'w' ? 'Black' : 'White';
+        const loserColor = game.turn === 'w' ? 'w' : 'b';
         const winnerName = winnerColor === 'White' ? navElements.whiteName : navElements.blackName;
-        // Replaced alert with Custom Modal
-        showGameOverModal("Checkmate!", `${winnerName} wins!`);
-    } else if (game.in_draw && game.in_draw()) { // Checking generic 50-move or stalemate if supported by logic
+
+        triggerDustEffect(loserColor);
+
+        let resultText = "";
+        if (gameMode === 'local') {
+            resultText = `${winnerName} Wins!`;
+        } else {
+            // Multiplayer
+            const iAmWinner = (playerColor === 'w' && winnerColor === 'White') || (playerColor === 'b' && winnerColor === 'Black');
+            resultText = iAmWinner ? "You Won!" : "You Lost!";
+        }
+
+        showResultPopup(resultText);
+
+    } else if (game.in_draw && game.in_draw()) {
         stopTimer();
-        showGameOverModal("Draw", "Game ended in a draw (Stalemate/Repetition).");
+        showGameOverModal("Draw", "Game ended in a draw.");
     }
 }
 
