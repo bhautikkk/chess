@@ -39,20 +39,31 @@
 <body>
     <!-- Menu Screen -->
     <div id="menu-screen" class="screen active">
-        <h1>Chess</h1>
+        <h1 class="game-title">CHESS<br>MASTER</h1>
         <div class="menu-content">
-            <input type="text" id="name-input" placeholder="Enter Your Name"
-                style="padding: 12px; font-size: 1.1rem; width: 250px; margin-bottom: 20px; border-radius: 5px; border: 1px solid #ccc;">
+            <div class="input-group">
+                <input type="text" id="name-input" class="capsule-input" placeholder="Enter Your Name">
+            </div>
 
-            <div id="menu-error" style="color: #ff6b6b; margin-bottom: 10px; height: 20px; font-weight: bold;"></div>
+            <button id="play-local-btn" class="menu-btn btn-gold">
+                <span class="btn-text">Play Local (2P)</span>
+            </button>
 
-            <div class="menu-buttons">
-                <button id="play-local-btn" class="menu-btn">Play Local (2P)</button>
-                <button id="create-room-btn" class="menu-btn">Create Room</button>
-                <div style="margin-top: 20px;">
-                    <input type="text" id="room-code-input" placeholder="Enter Room Code" maxlength="6">
-                    <button id="join-room-btn" class="action-btn">Join Room</button>
-                </div>
+            <button id="create-room-btn" class="menu-btn btn-blue">
+                <span class="btn-text">Create Room</span>
+            </button>
+
+            <div class="input-group">
+                <input type="text" id="room-code-input" class="capsule-input" placeholder="Enter Room Code"
+                    maxlength="6">
+            </div>
+
+            <button id="join-room-btn" class="menu-btn btn-green">
+                <span class="btn-text">Join Room</span>
+            </button>
+
+            <div id="menu-error"
+                style="color: #ff6b6b; margin-top: 10px; height: 20px; font-weight: bold; text-shadow: 1px 1px 2px black;">
             </div>
         </div>
     </div>
