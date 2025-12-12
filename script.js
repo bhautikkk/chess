@@ -60,6 +60,21 @@ function showError(msg) {
     }
 }
 
+// --- Promotion Handling ---
+let pendingPromotionMove = null;
+const promotionModal = document.getElementById('promotion-modal');
+
+document.querySelectorAll('.promo-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const type = btn.dataset.type;
+        if (pendingPromotionMove) {
+            completeMove(pendingPromotionMove, type);
+            pendingPromotionMove = null;
+            promotionModal.classList.add('hidden');
+        }
+    });
+});
+
 // --- Menu Events ---
 
 // Play Local
@@ -216,112 +231,6 @@ function playMoveSound() {
     moveSound.play().catch(e => console.log("Audio play failed: ", e));
 }
 
-// --- WebRTC Voice Chat ---
-const micBtn = document.getElementById('mic-btn');
-let localStream;
-let peerConnection;
-let isMicOn = false;
-
-const rtcConfig = {
-    iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' } // Free Google STUN server
-    ]
-};
-
-async function startVoiceChat(isInitiator) {
-    try {
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        isMicOn = true;
-        updateMicButton();
-
-        peerConnection = new RTCPeerConnection(rtcConfig);
-
-        // Add local tracks
-        localStream.getTracks().forEach(track => {
-            peerConnection.addTrack(track, localStream);
-        });
-
-        // Handle remote tracks
-        peerConnection.ontrack = (event) => {
-            const remoteAudio = new Audio();
-            remoteAudio.srcObject = event.streams[0];
-            remoteAudio.autoplay = true;
-        };
-
-        // ICE Candidates
-        peerConnection.onicecandidate = (event) => {
-            if (event.candidate) {
-                socket.emit('signal', {
-                    roomCode: currentRoomCode,
-                    signalData: { type: 'candidate', candidate: event.candidate }
-                });
-            }
-        };
-
-        if (isInitiator) {
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            socket.emit('signal', {
-                roomCode: currentRoomCode,
-                signalData: { type: 'offer', sdp: offer }
-            });
-        }
-
-    } catch (err) {
-        console.error("Error starting voice chat:", err);
-        showToast("Mic access denied or error.", 3000);
-        if (micBtn) micBtn.style.display = 'none'; // Hide if failed
-    }
-}
-
-// Handle Incoming Signals
-socket.on('signal', async (data) => {
-    if (!peerConnection) {
-        await startVoiceChat(false);
-    }
-
-    try {
-        if (data.type === 'offer') {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
-            socket.emit('signal', {
-                roomCode: currentRoomCode,
-                signalData: { type: 'answer', sdp: answer }
-            });
-        } else if (data.type === 'answer') {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
-        } else if (data.type === 'candidate') {
-            await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-        }
-    } catch (err) {
-        console.error("Signaling error:", err);
-    }
-});
-
-// Mic Toggle
-if (micBtn) {
-    micBtn.addEventListener('click', () => {
-        if (localStream) {
-            isMicOn = !isMicOn;
-            localStream.getAudioTracks().forEach(track => track.enabled = isMicOn);
-            updateMicButton();
-        }
-    });
-}
-
-function updateMicButton() {
-    if (!micBtn) return;
-    if (isMicOn) {
-        micBtn.innerText = "🎤";
-        micBtn.classList.add('active');
-        micBtn.classList.remove('muted');
-    } else {
-        micBtn.innerText = "🔇";
-        micBtn.classList.add('muted');
-        micBtn.classList.remove('active');
-    }
-}
 
 // --- Socket Events ---
 
@@ -359,18 +268,12 @@ socket.on('gameStart', (data) => {
         // Show Multiplayer Buttons
         if (drawBtn) drawBtn.style.display = 'inline-block';
         if (resignBtn) resignBtn.style.display = 'inline-block';
-        if (micBtn) micBtn.style.display = 'inline-block';
 
         closeModal(); // Clear any game over modals
         showScreen(gameScreen);
         renderBoardSimple();
         showToast("Game Started!");
 
-        // Start Voice (Room Creator initiates)
-        // To avoid collision, let's say White initiates.
-        if (socket.id === data.white) {
-            startVoiceChat(true).catch(e => console.log("Voice init error:", e));
-        }
     } catch (err) {
         console.error("Game Start Error:", err);
         showError("Error starting game: " + err.message);
@@ -525,6 +428,27 @@ function renderBoardSimple() {
     updateStatus();
 }
 
+function completeMove(move, promotionType = null) {
+    if (promotionType) {
+        move.promotion = promotionType;
+    }
+
+    game.makeMove(move);
+    playMoveSound();
+
+    if (gameMode === 'multiplayer') {
+        socket.emit('move', {
+            roomCode: currentRoomCode,
+            move: move
+        });
+    }
+
+    selectedSquare = null;
+    validMoves = [];
+    renderBoardSimple();
+    checkGameOver();
+}
+
 
 function onSquareClick(index) {
     if (gameMode === 'multiplayer' && game.turn !== playerColor) {
@@ -541,20 +465,16 @@ function onSquareClick(index) {
     const move = validMoves.find(m => m.to === index);
 
     if (move) {
-        game.makeMove(move);
-        // playMoveSound(); // Removed as per user request (only hear opponent)
-
-        if (gameMode === 'multiplayer') {
-            socket.emit('move', {
-                roomCode: currentRoomCode,
-                move: move
-            });
+        // Check for promotion
+        const piece = game.getPiece(selectedSquare);
+        // If pawn and reaching last rank
+        if (piece.type === 'p' && (Math.floor(move.to / 8) === 0 || Math.floor(move.to / 8) === 7)) {
+            pendingPromotionMove = move;
+            promotionModal.classList.remove('hidden');
+            return;
         }
 
-        selectedSquare = null;
-        validMoves = [];
-        renderBoardSimple();
-        checkGameOver();
+        completeMove(move);
         return;
     }
 

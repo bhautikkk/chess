@@ -40,7 +40,14 @@ class ChessGame {
         this.enPassantTarget = null; // Square like 'e3' if available
         this.halfMoveClock = 0;
         this.fullMoveNumber = 1;
-        this.history = []; // History of moves for undo? or just state to check repetition
+        this.history = [];
+        this.board = [];
+        this.turn = 'w'; // 'w' or 'b'
+        this.castling = { w: { k: true, q: true }, b: { k: true, q: true } };
+        this.enPassantTarget = null; // Square like 'e3' if available
+        this.halfMoveClock = 0;
+        this.fullMoveNumber = 1;
+
         this.reset();
     }
 
@@ -51,7 +58,7 @@ class ChessGame {
 
     loadFEN(fen) {
         const parts = fen.split(' ');
-        
+
         // 1. Board
         this.board = new Array(64).fill(null);
         let rows = parts[0].split('/');
@@ -98,7 +105,7 @@ class ChessGame {
         const rank = 8 - parseInt(sq[1]);
         return rank * 8 + file;
     }
-    
+
     indexToSquare(index) {
         const rank = Math.floor(index / 8);
         const file = index % 8;
@@ -112,7 +119,7 @@ class ChessGame {
         if (!piece || piece.color !== this.turn) return [];
 
         const moves = this.getPseudoLegalMoves(index, piece);
-        
+
         // Filter moves that leave king in check
         return moves.filter(move => {
             // Apply move temporarily
@@ -124,11 +131,11 @@ class ChessGame {
         });
     }
 
-    getPseudoLegalMoves(index, piece) {
+    getPseudoLegalMoves(index, piece, includeCastling = true) {
         const moves = [];
         const r = Math.floor(index / 8);
         const c = index % 8;
-        
+
         const directions = {
             'b': [[1, 1], [1, -1], [-1, 1], [-1, -1]],
             'r': [[1, 0], [-1, 0], [0, 1], [0, -1]],
@@ -140,7 +147,7 @@ class ChessGame {
         const addMove = (to) => {
             moves.push({ from: index, to: to });
         };
-        
+
         // Sliding pieces
         if (['b', 'r', 'q'].includes(piece.type)) {
             for (let d of directions[piece.type]) {
@@ -148,10 +155,10 @@ class ChessGame {
                     const tr = r + d[0] * i;
                     const tc = c + d[1] * i;
                     if (tr < 0 || tr > 7 || tc < 0 || tc > 7) break;
-                    
+
                     const targetIndex = tr * 8 + tc;
                     const targetPiece = this.board[targetIndex];
-                    
+
                     if (!targetPiece) {
                         addMove(targetIndex);
                     } else {
@@ -163,7 +170,7 @@ class ChessGame {
                 }
             }
         }
-        
+
         // Knight
         if (piece.type === 'n') {
             for (let d of directions['n']) {
@@ -192,15 +199,46 @@ class ChessGame {
                     }
                 }
             }
-            // Castling (Not fully implemented in this basic version for simplicity, but stubbed)
-            // TODO: Add Castling Logic
+            // Castling
+            if (includeCastling && !this.isKingInCheck(piece.color)) {
+                // Kingside
+                if (this.castling[piece.color].k) {
+                    const kTo = piece.color === 'w' ? 62 : 6;
+                    const rPos = piece.color === 'w' ? 63 : 7;
+                    const empty1 = piece.color === 'w' ? 61 : 5;
+                    const pathCheck = piece.color === 'w' ? 61 : 5; // Square king crosses
+
+                    if (!this.board[empty1] && !this.board[kTo] && this.board[rPos] && this.board[rPos].type === 'r') {
+                        // Check if path is attacked
+                        if (!this.isSquareAttacked(pathCheck, piece.color === 'w' ? 'b' : 'w') &&
+                            !this.isSquareAttacked(kTo, piece.color === 'w' ? 'b' : 'w')) {
+                            addMove(kTo);
+                        }
+                    }
+                }
+                // Queenside
+                if (this.castling[piece.color].q) {
+                    const kTo = piece.color === 'w' ? 58 : 2;
+                    const rPos = piece.color === 'w' ? 56 : 0;
+                    const empty1 = piece.color === 'w' ? 59 : 3;
+                    const empty2 = piece.color === 'w' ? 57 : 1;
+                    const pathCheck = piece.color === 'w' ? 59 : 3;
+
+                    if (!this.board[empty1] && !this.board[empty2] && !this.board[kTo] && this.board[rPos] && this.board[rPos].type === 'r') {
+                        if (!this.isSquareAttacked(pathCheck, piece.color === 'w' ? 'b' : 'w') &&
+                            !this.isSquareAttacked(kTo, piece.color === 'w' ? 'b' : 'w')) {
+                            addMove(kTo);
+                        }
+                    }
+                }
+            }
         }
 
         // Pawn
         if (piece.type === 'p') {
             const dir = piece.color === 'w' ? -1 : 1;
             const startRank = piece.color === 'w' ? 6 : 1;
-            
+
             // Forward 1
             const f1r = r + dir;
             const f1c = c;
@@ -240,7 +278,7 @@ class ChessGame {
         // Validates and executes a move
         const validMoves = this.getValidMoves(move.from);
         const actualMove = validMoves.find(m => m.to === move.to); // Check if requested move is in valid list
-        
+
         if (actualMove) {
             this.makeMoveInternal(actualMove);
             return true;
@@ -251,29 +289,74 @@ class ChessGame {
     makeMoveInternal(move) {
         const piece = this.board[move.from];
         const target = this.board[move.to];
-        
+
         // Update board
         this.board[move.to] = piece;
         this.board[move.from] = null;
+
+        // Handle Castling
+        // White Kingside
+        if (piece.type === 'k' && move.from === 60 && move.to === 62) {
+            const rook = this.board[63];
+            this.board[61] = rook;
+            this.board[63] = null;
+        }
+        // White Queenside
+        if (piece.type === 'k' && move.from === 60 && move.to === 58) {
+            const rook = this.board[56];
+            this.board[59] = rook;
+            this.board[56] = null;
+        }
+        // Black Kingside
+        if (piece.type === 'k' && move.from === 4 && move.to === 6) {
+            const rook = this.board[7];
+            this.board[5] = rook;
+            this.board[7] = null;
+        }
+        // Black Queenside
+        if (piece.type === 'k' && move.from === 4 && move.to === 2) {
+            const rook = this.board[0];
+            this.board[3] = rook;
+            this.board[0] = null;
+        }
+
+        // Update Castling Rights
+        if (piece.type === 'k') {
+            this.castling[piece.color].k = false;
+            this.castling[piece.color].q = false;
+        }
+        if (piece.type === 'r') {
+            if (move.from === 63) this.castling.w.k = false; // H1
+            if (move.from === 56) this.castling.w.q = false; // A1
+            if (move.from === 7) this.castling.b.k = false;  // H8
+            if (move.from === 0) this.castling.b.q = false;  // A8
+        }
+        // If rook is captured
+        if (target && target.type === 'r') { // Note: 'target' is the captured piece from before move
+            if (move.to === 63) this.castling.w.k = false;
+            if (move.to === 56) this.castling.w.q = false;
+            if (move.to === 7) this.castling.b.k = false;
+            if (move.to === 0) this.castling.b.q = false;
+        }
 
         // Handle En Passant Capture
         if (piece.type === 'p' && move.to === this.enPassantTarget) {
             const dir = piece.color === 'w' ? -1 : 1;
             // The pawn being captured is 'behind' the target square
-            this.board[move.to - dir * 8] = null; 
+            this.board[move.to - dir * 8] = null;
         }
 
         // Reset En Passant Target
         this.enPassantTarget = null;
-        
+
         // Set En Passant Target for double pawn push
-        if (piece.type === 'p' && Math.abs(Math.floor(move.from/8) - Math.floor(move.to/8)) === 2) {
-             this.enPassantTarget = (move.from + move.to) / 2;
+        if (piece.type === 'p' && Math.abs(Math.floor(move.from / 8) - Math.floor(move.to / 8)) === 2) {
+            this.enPassantTarget = (move.from + move.to) / 2;
         }
 
-        // Promotion (Auto-promote to Queen for simplicity)
-        if (piece.type === 'p' && (Math.floor(move.to/8) === 0 || Math.floor(move.to/8) === 7)) {
-            piece.type = 'q';
+        // Promotion
+        if (piece.type === 'p' && (Math.floor(move.to / 8) === 0 || Math.floor(move.to / 8) === 7)) {
+            piece.type = move.promotion || 'q'; // Use requested promotion or default to Queen
         }
 
         // Switch Turn
@@ -281,7 +364,6 @@ class ChessGame {
     }
 
     isKingInCheck(color) {
-        // Find King
         let kingIndex = -1;
         for (let i = 0; i < 64; i++) {
             if (this.board[i] && this.board[i].type === 'k' && this.board[i].color === color) {
@@ -289,21 +371,57 @@ class ChessGame {
                 break;
             }
         }
+        if (kingIndex === -1) return false; // Should not happen
+        return this.isSquareAttacked(kingIndex, color === 'w' ? 'b' : 'w');
+    }
 
-        // Check if any opponent piece attacks king position
-        const opponentColor = color === 'w' ? 'b' : 'w';
+    isSquareAttacked(index, byColor) {
+        // Reverse check: see if a piece of 'byColor' can move to 'index'
+        // We can reuse getPseudoLegalMoves but logic is slightly different (pawns attack diagonally only)
+
         for (let i = 0; i < 64; i++) {
             const piece = this.board[i];
-            if (piece && piece.color === opponentColor) {
-               const moves = this.getPseudoLegalMoves(i, piece);
-               if (moves.some(m => m.to === kingIndex)) {
-                   return true;
-               }
+            if (piece && piece.color === byColor) {
+                // Optimization: simple distance checks before generating moves
+
+                // Pawn special case: pawns only attack diagonally
+                if (piece.type === 'p') {
+                    const dir = piece.color === 'w' ? -1 : 1;
+                    const r = Math.floor(i / 8);
+                    const c = i % 8;
+                    const tr = Math.floor(index / 8);
+                    const tc = index % 8;
+
+                    if (tr === r + dir && Math.abs(tc - c) === 1) return true;
+                    continue;
+                }
+
+                // For others, generate pseudo moves
+                // CAUTION: Infinite recursion if we are not careful. 
+                // getPseudoLegalMoves does NOT call isSquareAttacked. Safe.
+                // However, King moves include castling which calls isSquareAttacked... 
+                // But King logic in getPseudoLegalMoves uses simple steps, only castling block adds extra.
+                // We should pass a flag to getPseudoLegalMoves to NOT generate castling moves to avoid recursion/waste?
+                // Or just manually check here.
+
+                const moves = this.getPseudoLegalMoves(i, piece, false);
+                // Filter out castling moves from the attacker (kings don't attack via castling)
+                // Actually getPseudoLegalMoves checks castling using squareAttacked...
+                // To prevent infinite recursion, isSquareAttacked is called by Castling logic.
+                // Castling logic calls isSquareAttacked.
+                // Attacker's moves calculation: if attacker is King, it checks castling?
+                // Minimal recursion risk because Castling is conditional on King piece, 
+                // and we only care if King ATTACKS 'index'. King attacks adjacent squares.
+                // Castling is a move to valid square, but King never "attacks" the castling target square in a way that captures.
+                // The 'moves' list will contain castling moves (e.g. e1->g1), but 'index' will be the square we are checking.
+                // If we are checking if e1 is attacked, another king cannot be checking it.
+
+                if (moves.some(m => m.to === index)) return true;
             }
         }
         return false;
     }
-    
+
     // Helpers for State saving (simplified)
     saveState() {
         return {
@@ -311,19 +429,21 @@ class ChessGame {
             turn: this.turn,
             ep: this.enPassantTarget,
             // ... castling, etc
+            castling: JSON.parse(JSON.stringify(this.castling))
         };
     }
-    
+
     restoreState(state) {
         this.board = state.board;
         this.turn = state.turn;
         this.enPassantTarget = state.ep;
+        this.castling = state.castling;
     }
-    
+
     isCheckmate() {
         // if check and no valid moves
         if (!this.isKingInCheck(this.turn)) return false;
-        
+
         for (let i = 0; i < 64; i++) {
             if (this.board[i] && this.board[i].color === this.turn) {
                 if (this.getValidMoves(i).length > 0) return false;

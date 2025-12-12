@@ -99,13 +99,27 @@
                     <!-- Multiplayer Controls -->
                     <button id="draw-btn" class="btn-draw" style="display:none;">½ Draw</button>
                     <button id="resign-btn" class="btn-resign" style="display:none;">🏳️ Resign</button>
-                    <button id="mic-btn" class="btn-mic" style="display:none;">🔇</button>
+
                 </div>
             </div>
         </div>
 
         <!-- Modals Container -->
         <div id="modal-container"></div>
+
+        <!-- Promotion Modal (Custom built for speed) -->
+        <div id="promotion-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <h2>Choose Promotion</h2>
+                <div class="promotion-options">
+                    <button class="promo-btn" data-type="q">Queen ♕</button>
+                    <button class="promo-btn" data-type="r">Rook ♖</button>
+                    <button class="promo-btn" data-type="b">Bishop ♗</button>
+                    <button class="promo-btn" data-type="n">Knight ♘</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Toast Container -->
         <div id="toast-container"></div>
 
