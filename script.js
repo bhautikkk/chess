@@ -17,6 +17,12 @@ const menuScreen = document.getElementById('menu-screen');
 const gameScreen = document.getElementById('game-screen');
 const waitingScreen = document.getElementById('waiting-screen');
 
+// Timer State
+let whiteTime = 900; // seconds
+let blackTime = 900;
+let timerInterval = null;
+let lastUpdate = Date.now();
+
 // Logic State
 let selectedSquare = null;
 let validMoves = [];
@@ -58,6 +64,64 @@ function showError(msg) {
     } else {
         alert(msg); // Fallback
     }
+}
+
+// --- Timer Functions ---
+function startTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    lastUpdate = Date.now();
+    timerInterval = setInterval(() => {
+        const now = Date.now();
+        const delta = (now - lastUpdate) / 1000;
+        lastUpdate = now;
+
+        if (game.turn === 'w') {
+            whiteTime -= delta;
+        } else {
+            blackTime -= delta;
+        }
+
+        updateTimerUI();
+
+        if (whiteTime <= 0 || blackTime <= 0) {
+            clearInterval(timerInterval);
+        }
+    }, 100); // Update every 100ms for smoothness
+}
+
+function stopTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+}
+
+function updateTimerUI() {
+    const format = (t) => {
+        const totalSeconds = Math.max(0, Math.floor(t));
+        const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+        const s = (totalSeconds % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    };
+
+    // Assuming we will add elements with these IDs in HTML
+    const whiteTimerEl = document.getElementById('timer-bottom'); // Me or Opponent depending on color? No, let's map by color
+    const blackTimerEl = document.getElementById('timer-top');
+
+    // We need to map 'white' and 'black' to 'top' and 'bottom' based on playerColor
+    // If I am White: Bottom is White, Top is Black
+    // If I am Black: Bottom is Black, Top is White
+
+    let bottomTimeStr = "";
+    let topTimeStr = "";
+
+    if (playerColor === 'w') {
+        bottomTimeStr = format(whiteTime);
+        topTimeStr = format(blackTime);
+    } else {
+        bottomTimeStr = format(blackTime);
+        topTimeStr = format(whiteTime);
+    }
+
+    if (document.getElementById('timer-bottom')) document.getElementById('timer-bottom').innerText = bottomTimeStr;
+    if (document.getElementById('timer-top')) document.getElementById('timer-top').innerText = topTimeStr;
 }
 
 // --- Promotion Handling ---
@@ -262,6 +326,17 @@ socket.on('gameStart', (data) => {
 
         // UI Reset
         game.reset();
+
+        // Timer Reset
+        if (data.whiteTime) whiteTime = data.whiteTime / 1000;
+        else whiteTime = 900;
+
+        if (data.blackTime) blackTime = data.blackTime / 1000;
+        else blackTime = 900;
+
+        updateTimerUI();
+        startTimer();
+
         updateGameInfoHeader(false);
         if (resetBtn) resetBtn.style.display = 'none';
 
@@ -280,11 +355,35 @@ socket.on('gameStart', (data) => {
     }
 });
 
-socket.on('move', (move) => {
-    game.makeMoveInternal(move);
+socket.on('move', (data) => {
+    // data = { move, whiteTime, blackTime }
+    // If simple move object (local/legacy), handle gracefully
+    let moveData = data.move || data;
+
+    game.makeMoveInternal(moveData);
     playMoveSound();
     renderBoardSimple();
+
+    // Sync Time
+    if (data.whiteTime) whiteTime = data.whiteTime / 1000;
+    if (data.blackTime) blackTime = data.blackTime / 1000;
+    updateTimerUI();
+
     checkGameOver();
+});
+
+socket.on('timeSync', (data) => {
+    if (data.whiteTime) whiteTime = data.whiteTime / 1000;
+    if (data.blackTime) blackTime = data.blackTime / 1000;
+    updateTimerUI();
+});
+
+socket.on('opponentDisconnected', () => {
+    stopTimer();
+    showToast("Opponent Disconnected. Returning to menu...", 3000);
+    setTimeout(() => {
+        location.reload();
+    }, 3000);
 });
 
 // New Events
@@ -439,7 +538,11 @@ function completeMove(move, promotionType = null) {
     if (gameMode === 'multiplayer') {
         socket.emit('move', {
             roomCode: currentRoomCode,
-            move: move
+            move: move,
+            turn: game.turn === 'w' ? 'b' : 'w' // We emit the move AFTER making it, so game.turn has flipped. 
+            // Wait. We need to say who made this move. 
+            // If game.turn is now Black, it means White made the move.
+            // So turn: game.turn === 'w' ? 'b' : 'w'. Correct.
         });
     }
 
@@ -495,12 +598,16 @@ function onSquareClick(index) {
 }
 
 function checkGameOver() {
+    // Note: Timeouts are handled by server event, but we can double check locally? 
+    // Server has authority.
     if (game.isCheckmate()) {
+        stopTimer();
         const winnerColor = game.turn === 'w' ? 'Black' : 'White';
         const winnerName = winnerColor === 'White' ? navElements.whiteName : navElements.blackName;
         // Replaced alert with Custom Modal
         showGameOverModal("Checkmate!", `${winnerName} wins!`);
     } else if (game.in_draw && game.in_draw()) { // Checking generic 50-move or stalemate if supported by logic
+        stopTimer();
         showGameOverModal("Draw", "Game ended in a draw (Stalemate/Repetition).");
     }
 }
@@ -522,6 +629,16 @@ resetBtn.addEventListener('click', () => {
     validMoves = [];
     isFlipped = false;
     currentRoomCode = null;
+
+    // Local Timer reset? 
+    whiteTime = 900;
+    blackTime = 900;
+    stopTimer(); // No timer in local for now? Or yes? 
+    // Let's add timer for Local too for fun, but maybe optional. 
+    // For now, let's just render.
+    startTimer();
+    updateTimerUI();
+
     renderBoardSimple();
 });
 

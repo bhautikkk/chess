@@ -78,7 +78,15 @@
                 <div class="game-header">
                     <button id="back-menu-btn" class="btn-secondary">Menu</button>
                     <div id="room-info" class="player-info">Room: -</div>
-                    <div id="player-top" class="player-info">Opponent</div>
+                </div>
+
+                <!-- Opponent Bar -->
+                <div class="player-bar top">
+                    <div class="player-details">
+                        <!-- Avatar or Icon could go here -->
+                        <div id="player-top" class="player-name">Opponent</div>
+                    </div>
+                    <div id="timer-top" class="player-timer">15:00</div>
                 </div>
 
                 <!-- Status -->
@@ -87,19 +95,20 @@
                 <!-- Board -->
                 <div id="board" class="board"></div>
 
-                <!-- Footer: Me & Controls -->
-                <div class="game-header" style="justify-content: center; margin-bottom: 5px;">
-                    <div id="player-bottom" class="player-info">Me</div>
+                <!-- Me Bar -->
+                <div class="player-bar bottom">
+                    <div class="player-details">
+                        <div id="player-bottom" class="player-name">Me</div>
+                    </div>
+                    <div id="timer-bottom" class="player-timer">15:00</div>
                 </div>
 
                 <div class="controls">
                     <button id="flip-btn" class="btn-secondary">Flip</button>
                     <button id="reset-btn" class="btn-secondary">Restart (Local)</button>
-
                     <!-- Multiplayer Controls -->
                     <button id="draw-btn" class="btn-draw" style="display:none;">½ Draw</button>
                     <button id="resign-btn" class="btn-resign" style="display:none;">🏳️ Resign</button>
-
                 </div>
             </div>
         </div>

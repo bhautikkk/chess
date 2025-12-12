@@ -59,21 +59,65 @@ io.on('connection', (socket) => {
         room.blackName = data.name;
         socket.join(roomCode);
 
+        // Initialize Timers (15 minutes = 900,000 ms)
+        room.whiteTime = 900000;
+        room.blackTime = 900000;
+        room.lastMoveTime = Date.now(); // Start clock for White
+
         // Notify both players
         io.to(roomCode).emit('gameStart', {
             white: room.white,
             whiteName: room.whiteName,
             black: room.black,
-            blackName: room.blackName
+            blackName: room.blackName,
+            whiteTime: room.whiteTime,
+            blackTime: room.blackTime
         });
         console.log(`User ${socket.id} joined room ${roomCode}`);
     });
 
     // Move
     socket.on('move', (data) => {
-        // data = { roomCode, move: {from, to}, fen }
-        // Broadcast to others in room
-        socket.to(data.roomCode).emit('move', data.move);
+        // data = { roomCode, move: {from, to}, fen, turn }
+        const room = rooms[data.roomCode];
+        if (!room) return;
+
+        // Calculate time usage
+        const now = Date.now();
+        const elapsed = now - room.lastMoveTime;
+        room.lastMoveTime = now;
+
+        // Note: 'turn' in data is the color that JUST moved.
+        // If White moved, it was White's turn, so deduct from White.
+        if (data.turn === 'w') {
+            room.whiteTime -= elapsed;
+        } else {
+            room.blackTime -= elapsed;
+        }
+
+        // Check for Timeout
+        if (room.whiteTime <= 0) {
+            io.to(data.roomCode).emit('gameOver', { reason: 'timeout', winner: 'b' });
+            return;
+        }
+        if (room.blackTime <= 0) {
+            io.to(data.roomCode).emit('gameOver', { reason: 'timeout', winner: 'w' });
+            return;
+        }
+
+        // Broadcast to others in room with updated times
+        socket.to(data.roomCode).emit('move', {
+            move: data.move,
+            whiteTime: room.whiteTime,
+            blackTime: room.blackTime
+        });
+
+        // Also Ack back to sender to sync their time? 
+        // useful to keep server authorative time
+        socket.emit('timeSync', {
+            whiteTime: room.whiteTime,
+            blackTime: room.blackTime
+        });
     });
 
     // --- New Game Features ---
@@ -143,7 +187,24 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         console.log('user disconnected', socket.id);
-        // Handle cleanup if needed, or notify opponent
+
+        // Find room and notify opponent
+        for (const code in rooms) {
+            const room = rooms[code];
+            if (room.players.includes(socket.id)) {
+                // Determine who left
+                const opponentId = room.players.find(id => id !== socket.id);
+                if (opponentId) {
+                    io.to(opponentId).emit('opponentDisconnected');
+                }
+
+                // Clean up room immediately or wait?
+                // For now, delete it to prevent re-joining ghost room
+                delete rooms[code];
+                console.log(`Room ${code} closed due to disconnect.`);
+                break;
+            }
+        }
     });
 });
 
