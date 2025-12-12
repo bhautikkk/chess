@@ -54,6 +54,7 @@ class ChessGame {
     reset() {
         // Standard starting FEN
         this.loadFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+        this.history = [this.saveState()]; // Save initial state
     }
 
     loadFEN(fen) {
@@ -124,7 +125,7 @@ class ChessGame {
         return moves.filter(move => {
             // Apply move temporarily
             const savedState = this.saveState();
-            this.makeMoveInternal(move);
+            this.makeMoveInternal(move, false); // Don't record history for simulation
             const isCheck = this.isKingInCheck(piece.color);
             this.restoreState(savedState);
             return !isCheck;
@@ -280,13 +281,13 @@ class ChessGame {
         const actualMove = validMoves.find(m => m.to === move.to); // Check if requested move is in valid list
 
         if (actualMove) {
-            this.makeMoveInternal(actualMove);
+            this.makeMoveInternal(actualMove, true);
             return true;
         }
         return false;
     }
 
-    makeMoveInternal(move) {
+    makeMoveInternal(move, recordHistory = true) {
         const piece = this.board[move.from];
         const target = this.board[move.to];
 
@@ -361,6 +362,11 @@ class ChessGame {
 
         // Switch Turn
         this.turn = this.turn === 'w' ? 'b' : 'w';
+
+        // Add to history
+        if (recordHistory) {
+            this.history.push(this.saveState());
+        }
     }
 
     isKingInCheck(color) {
@@ -425,11 +431,12 @@ class ChessGame {
     // Helpers for State saving (simplified)
     saveState() {
         return {
-            board: [...this.board],
+            board: this.board.map(p => p ? { ...p } : null), // Deep copy of pieces
             turn: this.turn,
             ep: this.enPassantTarget,
-            // ... castling, etc
-            castling: JSON.parse(JSON.stringify(this.castling))
+            castling: JSON.parse(JSON.stringify(this.castling)),
+            halfMoveClock: this.halfMoveClock,
+            fullMoveNumber: this.fullMoveNumber
         };
     }
 

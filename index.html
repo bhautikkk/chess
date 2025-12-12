@@ -1,3 +1,4 @@
+y
 <!DOCTYPE html>
 <html lang="en">
 
@@ -84,69 +85,72 @@
     <!-- Game Screen -->
     <div id="game-screen" class="screen hidden">
         <div class="game-container">
-            <div class="game-container">
-                <!-- Header: Room Info & Opponent -->
-                <div class="game-header">
-                    <button id="back-menu-btn" class="btn-secondary">Menu</button>
-                    <div id="room-info" class="player-info">Room: -</div>
+            <!-- Header: Room Info & Opponent -->
+            <div class="game-header">
+                <button id="back-menu-btn" class="btn-secondary">Menu</button>
+                <div id="room-info" class="player-info">Room: -</div>
+            </div>
+
+            <!-- Opponent Bar -->
+            <div class="player-bar top">
+                <div class="player-details">
+                    <!-- Avatar or Icon could go here -->
+                    <div id="player-top" class="player-name">Opponent</div>
                 </div>
+                <div id="timer-top" class="player-timer">15:00</div>
+            </div>
 
-                <!-- Opponent Bar -->
-                <div class="player-bar top">
-                    <div class="player-details">
-                        <!-- Avatar or Icon could go here -->
-                        <div id="player-top" class="player-name">Opponent</div>
-                    </div>
-                    <div id="timer-top" class="player-timer">15:00</div>
+            <!-- Status -->
+            <div id="status" class="status">White's Turn</div>
+
+            <!-- Board -->
+            <div id="board" class="board"></div>
+
+            <!-- Me Bar -->
+            <div class="player-bar bottom">
+                <div class="player-details">
+                    <div id="player-bottom" class="player-name">Me</div>
                 </div>
+                <div id="timer-bottom" class="player-timer">15:00</div>
+            </div>
 
-                <!-- Status -->
-                <div id="status" class="status">White's Turn</div>
-
-                <!-- Board -->
-                <div id="board" class="board"></div>
-
-                <!-- Me Bar -->
-                <div class="player-bar bottom">
-                    <div class="player-details">
-                        <div id="player-bottom" class="player-name">Me</div>
-                    </div>
-                    <div id="timer-bottom" class="player-timer">15:00</div>
+            <div class="controls">
+                <div class="nav-controls" style="display: flex; gap: 5px; margin-bottom: 5px;">
+                    <button id="prev-move-btn" class="btn-secondary" title="Previous Move">◄</button>
+                    <button id="next-move-btn" class="btn-secondary" title="Next Move">►</button>
                 </div>
-
-                <div class="controls">
-                    <button id="flip-btn" class="btn-secondary">Flip</button>
-                    <button id="reset-btn" class="btn-secondary">Restart (Local)</button>
-                    <!-- Multiplayer Controls -->
-                    <button id="draw-btn" class="btn-draw" style="display:none;">½ Draw</button>
-                    <button id="resign-btn" class="btn-resign" style="display:none;">🏳️ Resign</button>
-                </div>
+                <button id="flip-btn" class="btn-secondary">Flip</button>
+                <button id="reset-btn" class="btn-secondary">Restart (Local)</button>
+                <!-- Multiplayer Controls -->
+                <button id="draw-btn" class="btn-draw" style="display:none;">½ Draw</button>
+                <button id="resign-btn" class="btn-resign" style="display:none;">🏳️ Resign</button>
             </div>
         </div>
+    </div>
 
-        <!-- Modals Container -->
-        <div id="modal-container"></div>
+    <!-- Modals Container -->
+    <div id="modal-container"></div>
 
-        <!-- Promotion Modal (Custom built for speed) -->
-        <div id="promotion-modal" class="modal-overlay hidden">
-            <div class="modal-content">
-                <h2>Choose Promotion</h2>
-                <div class="promotion-options">
-                    <button class="promo-btn" data-type="q">Queen ♕</button>
-                    <button class="promo-btn" data-type="r">Rook ♖</button>
-                    <button class="promo-btn" data-type="b">Bishop ♗</button>
-                    <button class="promo-btn" data-type="n">Knight ♘</button>
-                </div>
+    <!-- Promotion Modal (Custom built for speed) -->
+    <div id="promotion-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>Choose Promotion</h2>
+            <div class="promotion-options">
+                <button class="promo-btn" data-type="q">Queen ♕</button>
+                <button class="promo-btn" data-type="r">Rook ♖</button>
+                <button class="promo-btn" data-type="b">Bishop ♗</button>
+                <button class="promo-btn" data-type="n">Knight ♘</button>
             </div>
         </div>
+    </div>
 
-        <!-- Toast Container -->
-        <div id="toast-container"></div>
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
 
-        <!-- Logic -->
-        <script src="/socket.io/socket.io.js"></script>
-        <script src="game-logic.js"></script>
-        <script src="script.js"></script>
+    <!-- Logic -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="game-logic.js"></script>
+    <script src="script.js"></script>
 </body>
 
 </html>

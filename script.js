@@ -36,6 +36,7 @@ let navElements = {
     whiteName: "White",
     blackName: "Black"
 };
+let currentHistoryIndex = -1; // -1 means live game
 
 // Screen Handling
 function showScreen(screen) {
@@ -95,23 +96,18 @@ function stopTimer() {
 
 function updateTimerUI() {
     const format = (t) => {
+        if (typeof t !== 'number' || isNaN(t)) return "15:00"; // Fallback
         const totalSeconds = Math.max(0, Math.floor(t));
         const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
         const s = (totalSeconds % 60).toString().padStart(2, '0');
         return `${m}:${s}`;
     };
 
-    // Assuming we will add elements with these IDs in HTML
-    const whiteTimerEl = document.getElementById('timer-bottom'); // Me or Opponent depending on color? No, let's map by color
-    const blackTimerEl = document.getElementById('timer-top');
-
-    // We need to map 'white' and 'black' to 'top' and 'bottom' based on playerColor
-    // If I am White: Bottom is White, Top is Black
-    // If I am Black: Bottom is Black, Top is White
-
     let bottomTimeStr = "";
     let topTimeStr = "";
 
+    // Mapping: If I am White, Bottom=White, Top=Black.
+    // If I am Black, Bottom=Black, Top=White.
     if (playerColor === 'w') {
         bottomTimeStr = format(whiteTime);
         topTimeStr = format(blackTime);
@@ -120,8 +116,31 @@ function updateTimerUI() {
         topTimeStr = format(whiteTime);
     }
 
-    if (document.getElementById('timer-bottom')) document.getElementById('timer-bottom').innerText = bottomTimeStr;
-    if (document.getElementById('timer-top')) document.getElementById('timer-top').innerText = topTimeStr;
+    const bottomTimer = document.getElementById('timer-bottom');
+    const topTimer = document.getElementById('timer-top');
+
+    if (bottomTimer) {
+        bottomTimer.innerText = bottomTimeStr;
+        // Highlight active timer
+        const isMyTurn = (playerColor === 'w' && game.turn === 'w') || (playerColor === 'b' && game.turn === 'b');
+
+        if (isMyTurn) {
+            bottomTimer.classList.add('active-timer');
+        } else {
+            bottomTimer.classList.remove('active-timer');
+        }
+    }
+
+    if (topTimer) {
+        topTimer.innerText = topTimeStr;
+        const isOpponentTurn = (playerColor === 'w' && game.turn === 'b') || (playerColor === 'b' && game.turn === 'w');
+
+        if (isOpponentTurn) {
+            topTimer.classList.add('active-timer');
+        } else {
+            topTimer.classList.remove('active-timer');
+        }
+    }
 }
 
 // --- Promotion Handling ---
@@ -146,7 +165,9 @@ document.getElementById('play-local-btn').addEventListener('click', () => {
     const name = document.getElementById('name-input').value.trim() || "Player 1";
     gameMode = 'local';
     playerColor = 'w';
+    playerColor = 'w';
     game.reset();
+    currentHistoryIndex = -1; // Reset history view
     isFlipped = false;
     currentRoomCode = null;
 
@@ -157,6 +178,13 @@ document.getElementById('play-local-btn').addEventListener('click', () => {
     updateGameInfoHeader(true);
     showScreen(gameScreen);
     renderBoardSimple();
+
+    // Start Local Timer
+    whiteTime = 900;
+    blackTime = 900;
+    startTimer();
+    updateTimerUI();
+
     resetBtn.style.display = 'inline-block';
 });
 
@@ -326,15 +354,16 @@ socket.on('gameStart', (data) => {
 
         // UI Reset
         game.reset();
+        currentHistoryIndex = -1;
 
         // Timer Reset
-        if (data.whiteTime) whiteTime = data.whiteTime / 1000;
+        if (data.whiteTime !== undefined) whiteTime = data.whiteTime / 1000;
         else whiteTime = 900;
 
-        if (data.blackTime) blackTime = data.blackTime / 1000;
+        if (data.blackTime !== undefined) blackTime = data.blackTime / 1000;
         else blackTime = 900;
 
-        updateTimerUI();
+        updateTimerUI(); // Ensure initial state is rendered correctly
         startTimer();
 
         updateGameInfoHeader(false);
@@ -361,20 +390,27 @@ socket.on('move', (data) => {
     let moveData = data.move || data;
 
     game.makeMoveInternal(moveData);
+
+    // Auto-jump to live if viewing history (User request: "board par saare pices update ho jaye")
+    if (currentHistoryIndex !== -1) {
+        currentHistoryIndex = -1;
+        showToast("New Move! Jumped to live.");
+    }
+
     playMoveSound();
     renderBoardSimple();
 
     // Sync Time
-    if (data.whiteTime) whiteTime = data.whiteTime / 1000;
-    if (data.blackTime) blackTime = data.blackTime / 1000;
+    if (data.whiteTime !== undefined) whiteTime = data.whiteTime / 1000;
+    if (data.blackTime !== undefined) blackTime = data.blackTime / 1000;
     updateTimerUI();
 
     checkGameOver();
 });
 
 socket.on('timeSync', (data) => {
-    if (data.whiteTime) whiteTime = data.whiteTime / 1000;
-    if (data.blackTime) blackTime = data.blackTime / 1000;
+    if (data.whiteTime !== undefined) whiteTime = data.whiteTime / 1000;
+    if (data.blackTime !== undefined) blackTime = data.blackTime / 1000;
     updateTimerUI();
 });
 
@@ -478,8 +514,16 @@ function updateGameInfoHeader(isLocal) {
     updateStatus();
 }
 
-function renderBoardSimple() {
+function renderBoardSimple(customState = null) {
+    const boardToRender = customState ? customState.board : game.board;
     boardElement.innerHTML = '';
+
+    // History Mode Indicator
+    if (currentHistoryIndex !== -1) {
+        boardElement.style.border = "3px solid #ffd700"; // Gold border for history
+    } else {
+        boardElement.style.border = "none";
+    }
 
     for (let i = 0; i < 64; i++) {
         const row = Math.floor(i / 8);
@@ -503,7 +547,7 @@ function renderBoardSimple() {
             }
         }
 
-        const piece = game.getPiece(i);
+        const piece = boardToRender[i];
         if (piece) {
             const pieceElement = document.createElement('div');
             pieceElement.classList.add('piece');
@@ -533,6 +577,7 @@ function completeMove(move, promotionType = null) {
     }
 
     game.makeMove(move);
+    currentHistoryIndex = -1; // Ensure we are looking at live
     playMoveSound();
 
     if (gameMode === 'multiplayer') {
@@ -554,6 +599,15 @@ function completeMove(move, promotionType = null) {
 
 
 function onSquareClick(index) {
+    // Disable interaction if viewing history
+    if (currentHistoryIndex !== -1) {
+        showToast("Jump to live to make a move.");
+        // Optional: Jump to live?
+        // currentHistoryIndex = -1; 
+        // renderBoardSimple();
+        return;
+    }
+
     if (gameMode === 'multiplayer' && game.turn !== playerColor) {
         return;
     }
@@ -647,5 +701,33 @@ flipBtn.addEventListener('click', () => {
     renderBoardSimple();
 });
 
-// Initial Render
+renderBoardSimple();
+
+// History Navigation
+document.getElementById('prev-move-btn').addEventListener('click', () => {
+    if (game.history.length === 0) return;
+
+    if (currentHistoryIndex === -1) {
+        currentHistoryIndex = game.history.length - 1; // Start at latest
+    }
+
+    if (currentHistoryIndex > 0) {
+        currentHistoryIndex--;
+        const state = game.history[currentHistoryIndex];
+        renderBoardSimple(state);
+    }
+});
+
+document.getElementById('next-move-btn').addEventListener('click', () => {
+    if (currentHistoryIndex === -1) return; // Already live
+
+    if (currentHistoryIndex < game.history.length - 1) {
+        currentHistoryIndex++;
+        const state = game.history[currentHistoryIndex];
+        renderBoardSimple(state);
+    } else {
+        currentHistoryIndex = -1; // Go back to live
+        renderBoardSimple();
+    }
+});
 renderBoardSimple();
