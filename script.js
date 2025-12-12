@@ -287,6 +287,7 @@ function showGameOverModal(title, message, isRematch = false) {
     const html = `
         <div class="modal-overlay">
             <div class="modal-content">
+                <button id="close-modal-btn" class="close-btn">&times;</button>
                 <h2>${title}</h2>
                 <p>${message}</p>
                 <div class="modal-actions">
@@ -297,6 +298,13 @@ function showGameOverModal(title, message, isRematch = false) {
         </div>
     `;
     showModal(html);
+
+    const closeBtn = document.getElementById('close-modal-btn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            closeModal();
+        });
+    }
 
     const rematchBtn = document.getElementById('rematch-btn');
     if (rematchBtn) {
@@ -372,6 +380,7 @@ socket.on('gameStart', (data) => {
         // Show Multiplayer Buttons
         if (drawBtn) drawBtn.style.display = 'inline-block';
         if (resignBtn) resignBtn.style.display = 'inline-block';
+        if (chatToggleBtn) chatToggleBtn.style.display = 'inline-block';
 
         closeModal(); // Clear any game over modals
         showScreen(gameScreen);
@@ -485,6 +494,113 @@ socket.on('rematchRequested', () => {
     } else {
         // In case modal was closed or not visible (shouldn't happen in flow but safe to handle)
         showGameOverModal("Rematch?", "Opponent wants to play again.", true);
+    }
+});
+
+
+// --- Chat Logic ---
+const chatToggleBtn = document.getElementById('chat-toggle-btn');
+const chatContainer = document.getElementById('chat-container');
+const closeChatBtn = document.getElementById('close-chat-btn');
+const chatInput = document.getElementById('chat-input');
+const sendMsgBtn = document.getElementById('send-msg-btn');
+const chatMessages = document.getElementById('chat-messages');
+const chatNotification = document.getElementById('chat-notification');
+
+let isChatOpen = false;
+let unreadMessages = 0;
+
+if (chatToggleBtn) {
+    chatToggleBtn.addEventListener('click', () => {
+        toggleChat(true);
+    });
+}
+
+if (closeChatBtn) {
+    closeChatBtn.addEventListener('click', () => {
+        toggleChat(false);
+    });
+}
+
+function toggleChat(show) {
+    if (show) {
+        chatContainer.classList.remove('hidden');
+        chatToggleBtn.classList.add('active'); // Optional styling
+        isChatOpen = true;
+        unreadMessages = 0;
+        updateChatNotification();
+        scrollToBottom();
+    } else {
+        chatContainer.classList.add('hidden');
+        chatToggleBtn.classList.remove('active');
+        isChatOpen = false;
+    }
+}
+
+function updateChatNotification() {
+    if (unreadMessages > 0) {
+        chatNotification.classList.remove('hidden');
+    } else {
+        chatNotification.classList.add('hidden');
+    }
+}
+
+function scrollToBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function addMessageToChat(msg, sender, isMyMessage) {
+    const msgDiv = document.createElement('div');
+    msgDiv.classList.add('message');
+    msgDiv.classList.add(isMyMessage ? 'my-message' : 'opponent-message');
+
+    if (!isMyMessage) {
+        const senderDiv = document.createElement('div');
+        senderDiv.classList.add('message-sender');
+        senderDiv.innerText = sender;
+        msgDiv.appendChild(senderDiv);
+    }
+
+    const textDiv = document.createElement('div');
+    textDiv.innerText = msg;
+    msgDiv.appendChild(textDiv);
+
+    chatMessages.appendChild(msgDiv);
+    scrollToBottom();
+}
+
+function sendMessage() {
+    const text = chatInput.value.trim();
+    if (text && currentRoomCode) {
+        const myName = playerColor === 'w' ? navElements.whiteName : navElements.blackName;
+        // Emit
+        socket.emit('sendMessage', {
+            roomCode: currentRoomCode,
+            message: text,
+            senderName: myName
+        });
+        // Add locally
+        addMessageToChat(text, "Me", true);
+        chatInput.value = '';
+    }
+}
+
+if (sendMsgBtn) {
+    sendMsgBtn.addEventListener('click', sendMessage);
+}
+
+if (chatInput) {
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+}
+
+socket.on('receiveMessage', (data) => {
+    addMessageToChat(data.message, data.senderName, false);
+    if (!isChatOpen) {
+        unreadMessages++;
+        updateChatNotification();
+        // Optional sound?
     }
 });
 

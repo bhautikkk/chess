@@ -124,7 +124,24 @@ y
                 <!-- Multiplayer Controls -->
                 <button id="draw-btn" class="btn-draw" style="display:none;">½ Draw</button>
                 <button id="resign-btn" class="btn-resign" style="display:none;">🏳️ Resign</button>
+                <button id="chat-toggle-btn" class="btn-secondary" style="display:none;">💬 Chat <span
+                        id="chat-notification" class="notification-dot hidden"></span></button>
             </div>
+        </div>
+    </div>
+
+    <!-- Chat Interface -->
+    <div id="chat-container" class="chat-container hidden">
+        <div class="chat-header">
+            <span>Chat</span>
+            <button id="close-chat-btn" class="close-chat-btn">&times;</button>
+        </div>
+        <div id="chat-messages" class="chat-messages">
+            <!-- Messages go here -->
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Type a message..." maxlength="100">
+            <button id="send-msg-btn">Send</button>
         </div>
     </div>
 

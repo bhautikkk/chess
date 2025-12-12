@@ -183,6 +183,15 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Chat Message
+    socket.on('sendMessage', (data) => {
+        // data = { roomCode, message, senderName }
+        socket.to(data.roomCode).emit('receiveMessage', {
+            message: data.message,
+            senderName: data.senderName
+        });
+    });
+
 
 
     socket.on('disconnect', () => {
