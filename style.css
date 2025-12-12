@@ -343,45 +343,73 @@ h1 {
     transition: transform 0.1s ease;
 }
 
-/* Falling King Animation */
-@keyframes fall-over {
+/* Cracked King Animation */
+.piece.cracked {
+    filter: sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8);
+    background-image: linear-gradient(45deg, transparent 45%, #000 50%, transparent 55%), url('piece-image-placeholder');
+    /* Note: url will be set inline by JS, this is just for the gradient overlay */
+}
+
+.piece.cracked.normal {
+    animation: tilt-normal 2s ease-in-out infinite alternate;
+}
+
+.piece.cracked.flipped {
+    animation: tilt-flipped 2s ease-in-out infinite alternate;
+}
+
+@keyframes tilt-normal {
     0% {
-        transform: rotate(0deg);
-    }
-
-    20% {
-        transform: rotate(5deg);
-    }
-
-    40% {
-        transform: rotate(-5deg);
-    }
-
-    60% {
-        transform: rotate(10deg);
+        transform: rotate(0deg) scale(0.9);
     }
 
     100% {
-        transform: rotate(90deg) scale(0.9);
+        transform: rotate(15deg) scale(0.9);
     }
 }
 
-.piece.cracked {
-    /* Keeping filter for look, changing transform to animation */
-    filter: sepia(100%) hue-rotate(-50deg) saturate(300%) contrast(1.2) drop-shadow(2px 4px 6px black);
-    animation: fall-over 1.5s forwards ease-in-out;
-    transform-origin: bottom center;
+@keyframes tilt-flipped {
+    0% {
+        transform: rotate(180deg) scale(0.9);
+    }
+
+    100% {
+        transform: rotate(195deg) scale(0.9);
+    }
 }
 
-.square.checkmate-highlight {
-    animation: to-red 1s forwards ease-out;
+.piece.cracked::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(45deg,
+            transparent,
+            transparent 10px,
+            rgba(0, 0, 0, 0.8) 10px,
+            rgba(0, 0, 0, 0.8) 12px);
+    opacity: 0.7;
+    pointer-events: none;
 }
 
-@keyframes to-red {
-    to {
-        background-color: #d63031;
-        /* Strong Red */
-        box-shadow: inset 0 0 20px #000;
+/* Red Pulse for Checkmate Square */
+.square.result-highlight {
+    animation: red-pulse 1.5s infinite;
+}
+
+@keyframes red-pulse {
+    0% {
+        background-color: rgba(255, 0, 0, 0.4);
+    }
+
+    50% {
+        background-color: rgba(255, 0, 0, 0.7);
+    }
+
+    100% {
+        background-color: rgba(255, 0, 0, 0.4);
     }
 }
 

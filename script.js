@@ -360,17 +360,8 @@ function showGameOverModal(title, message, isRematch = false) {
 }
 
 function crackKing(winnerColor) {
-    // If winner is 'White', loser is 'Black', so crack Black King.
-    // If winner is 'Black', loser is 'White', so crack White King.
-    // winnerColor is the color string "White" or "Black" passed from checkGameOver
-    // BUT wait, checkGameOver passes names. Let's fix checkGameOver to pass color code or handle it.
-
-    // Actually, let's just find the king of the current turn (who just lost) or opposite of winner?
-    // game.turn has ALREADY flipped after the move?
-    // No, logic is: Move made -> turn flipped.
-    // If I made a move and checkmated opponent, it is NOW opponent's turn.
-    // So if it is Checkmate, game.turn is the LOSER's color.
-
+    // winnerColor is the color who won. Loser is the one whose turn it was (game.turn).
+    // game.turn is the loser's color in checkmate context because checkmate is detected when it's your turn but you have no moves.
     const loserColor = game.turn; // 'w' or 'b'
 
     for (let i = 0; i < 64; i++) {
@@ -379,10 +370,19 @@ function crackKing(winnerColor) {
             // Find the square element
             const square = document.querySelector(`.square[data-index="${i}"]`);
             if (square) {
-                square.classList.add('checkmate-highlight');
+                // Highlight Square Background Red
+                square.classList.add('result-highlight');
+
+                // Animate King
                 const pieceElem = square.querySelector('.piece');
                 if (pieceElem) {
                     pieceElem.classList.add('cracked');
+                    // Add POV specific animation class
+                    if (isFlipped) {
+                        pieceElem.classList.add('flipped');
+                    } else {
+                        pieceElem.classList.add('normal');
+                    }
                 }
             }
             break;
