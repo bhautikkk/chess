@@ -283,43 +283,110 @@ if (resignBtn) {
     });
 }
 
+const rematchControlBtn = document.createElement('button');
+rematchControlBtn.id = 'control-rematch-btn';
+rematchControlBtn.innerText = 'Rematch';
+rematchControlBtn.style.display = 'none';
+rematchControlBtn.classList.add('btn-secondary'); // Style like other controls
+document.querySelector('.controls').appendChild(rematchControlBtn);
+
+rematchControlBtn.addEventListener('click', () => {
+    socket.emit('requestRematch', currentRoomCode);
+    rematchControlBtn.innerText = "Waiting...";
+    rematchControlBtn.disabled = true;
+});
+
+
 function showGameOverModal(title, message, isRematch = false) {
-    const html = `
-        <div class="modal-overlay">
-            <div class="modal-content">
-                <button id="close-modal-btn" class="close-btn">&times;</button>
-                <h2>${title}</h2>
-                <p>${message}</p>
-                <div class="modal-actions">
-                    <button id="rematch-btn">${isRematch ? "Accept Rematch" : "Rematch"}</button>
-                    <button id="main-menu-btn" class="btn-secondary" style="background:transparent; border:1px solid #777;">Main Menu</button>
+    if (isRematch) {
+        // If it's a rematch request, we still need a modal or toast to accept it.
+        // User asked for "Checkmate logic" to be temporary. Rematch request is different.
+        // Let's keep Rematch Request as a modal or persistent notification because user needs to ACT.
+        // But for "CHECKMATE" result, we use the temporary popup.
+
+        const html = `
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    <h2>${title}</h2>
+                    <p>${message}</p>
+                    <div class="modal-actions">
+                         <button id="rematch-btn">Accept Rematch</button>
+                    </div>
                 </div>
             </div>
-        </div>
-    `;
-    showModal(html);
-
-    const closeBtn = document.getElementById('close-modal-btn');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            closeModal();
-        });
+        `;
+        showModal(html);
+        const rematchBtn = document.getElementById('rematch-btn');
+        if (rematchBtn) {
+            rematchBtn.addEventListener('click', () => {
+                socket.emit('requestRematch', currentRoomCode);
+                closeModal();
+            });
+        }
+        return;
     }
 
-    const rematchBtn = document.getElementById('rematch-btn');
-    if (rematchBtn) {
-        rematchBtn.addEventListener('click', (e) => {
-            socket.emit('requestRematch', currentRoomCode);
-            e.target.innerText = "Waiting for Opponent...";
-            e.target.disabled = true;
-        });
+    // Temporary Popup for Result
+    const popup = document.createElement('div');
+    popup.style.position = 'fixed';
+    popup.style.top = '50%';
+    popup.style.left = '50%';
+    popup.style.transform = 'translate(-50%, -50%)';
+    popup.style.background = 'rgba(0, 0, 0, 0.9)';
+    popup.style.color = '#ffd700'; // Gold
+    popup.style.padding = '30px';
+    popup.style.borderRadius = '15px';
+    popup.style.zIndex = '3000';
+    popup.style.textAlign = 'center';
+    popup.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.5)';
+
+    popup.innerHTML = `<h1>${title}</h1><h2 style="color:white;">${message}</h2>`;
+
+    document.body.appendChild(popup);
+
+    // Show Rematch button in controls
+    if (gameMode === 'multiplayer') {
+        rematchControlBtn.style.display = 'inline-block';
+        rematchControlBtn.innerText = 'Rematch';
+        rematchControlBtn.disabled = false;
     }
 
-    const mainMenuBtn = document.getElementById('main-menu-btn');
-    if (mainMenuBtn) {
-        mainMenuBtn.addEventListener('click', () => {
-            location.reload();
-        });
+    // Remove after 2 seconds
+    setTimeout(() => {
+        if (popup && popup.parentElement) {
+            popup.remove();
+        }
+    }, 2000);
+}
+
+function crackKing(winnerColor) {
+    // If winner is 'White', loser is 'Black', so crack Black King.
+    // If winner is 'Black', loser is 'White', so crack White King.
+    // winnerColor is the color string "White" or "Black" passed from checkGameOver
+    // BUT wait, checkGameOver passes names. Let's fix checkGameOver to pass color code or handle it.
+
+    // Actually, let's just find the king of the current turn (who just lost) or opposite of winner?
+    // game.turn has ALREADY flipped after the move?
+    // No, logic is: Move made -> turn flipped.
+    // If I made a move and checkmated opponent, it is NOW opponent's turn.
+    // So if it is Checkmate, game.turn is the LOSER's color.
+
+    const loserColor = game.turn; // 'w' or 'b'
+
+    for (let i = 0; i < 64; i++) {
+        const piece = game.board[i];
+        if (piece && piece.type === 'k' && piece.color === loserColor) {
+            // Find the square element
+            const square = document.querySelector(`.square[data-index="${i}"]`);
+            if (square) {
+                square.classList.add('checkmate-highlight');
+                const pieceElem = square.querySelector('.piece');
+                if (pieceElem) {
+                    pieceElem.classList.add('cracked');
+                }
+            }
+            break;
+        }
     }
 }
 
@@ -767,105 +834,25 @@ function onSquareClick(index) {
     }
 }
 
-// function checkGameOver() {
-//     // Note: Timeouts are handled by server event, but we can double check locally? 
-//     // Server has authority.
-//     if (game.isCheckmate()) {
-//         stopTimer();
-//         const winnerColor = game.turn === 'w' ? 'Black' : 'White';
-//         const loserColor = game.turn === 'w' ? 'w' : 'b';
-//         const winnerName = winnerColor === 'White' ? navElements.whiteName : navElements.blackName;
-
-//         triggerDustEffect(loserColor);
-
-//         // Show temporary result
-//         const myColor = gameMode === 'local' ? (game.turn === 'w' ? 'b' : 'w') : playerColor; 
-//         // Local mode weirdness: turn is loser's turn. so winner is opposite.
-//         // Actually simpler:
-//         // If I am white, and winner is White -> Win.
-//         // If I am white, and winner is Black -> Lose.
-
-//         let resultText = "";
-//         if (gameMode === 'local') {
-//             resultText = `${winnerName} Wins!`;
-//         } else {
-//             if ((playerColor === 'w' && winnerColor === 'White') || (playerColor === 'b' && winnerColor === 'Black')) {
-//                 resultText = "You Won!";
-//             } else {
-//                 resultText = "You Lost!";
-//             }
-//         }
-
-//         showResultPopup(resultText);
-
-//     } else if (game.in_draw && game.in_draw()) { // Checking generic 50-move or stalemate if supported by logic
-//         stopTimer();
-//         showGameOverModal("Draw", "Game ended in a draw (Stalemate/Repetition).");
-//     }
-// }
-
-function triggerDustEffect(losingColor) {
-    const squares = document.querySelectorAll('.square');
-    squares.forEach(sq => {
-        const piece = sq.querySelector('.piece');
-        if (piece) {
-            // Check piece color from background image or game state lookup
-            // Better: lookup game state using index
-            const index = parseInt(sq.dataset.index);
-            const p = game.board[index];
-            if (p && p.color === losingColor && p.type !== 'k') {
-                piece.classList.add('dust-piece');
-                // Randomize trajectory
-                const tx = (Math.random() - 0.5) * 200 + 'px';
-                const ty = (Math.random() - 0.5) * 200 + 'px';
-                const rot = (Math.random() - 0.5) * 360 + 'deg';
-                piece.style.setProperty('--tx', tx);
-                piece.style.setProperty('--ty', ty);
-                piece.style.setProperty('--rot', rot);
-
-                // Remove from DOM after animation
-                setTimeout(() => {
-                    piece.remove();
-                }, 1500);
-            }
-        }
-    });
-}
-
-function showResultPopup(text) {
-    const popup = document.createElement('div');
-    popup.className = 'result-popup';
-    popup.innerText = text;
-    document.body.appendChild(popup);
-
-    setTimeout(() => {
-        popup.remove();
-    }, 2500);
-}
-
 function checkGameOver() {
+    // Note: Timeouts are handled by server event, but we can double check locally? 
+    // Server has authority.
     if (game.isCheckmate()) {
         stopTimer();
         const winnerColor = game.turn === 'w' ? 'Black' : 'White';
-        const loserColor = game.turn === 'w' ? 'w' : 'b';
         const winnerName = winnerColor === 'White' ? navElements.whiteName : navElements.blackName;
+        // Verify who is the loser to crack their king
+        // Logic: if turn is 'w', it means 'w' has no moves -> 'w' is checkmated.
+        // Wait, game.isCheckmate() returns true if the CURRENT side (game.turn) is in checkmate.
+        // So if game.turn is 'w', White is checkmated.
 
-        triggerDustEffect(loserColor);
+        crackKing(winnerColor);
 
-        let resultText = "";
-        if (gameMode === 'local') {
-            resultText = `${winnerName} Wins!`;
-        } else {
-            // Multiplayer
-            const iAmWinner = (playerColor === 'w' && winnerColor === 'White') || (playerColor === 'b' && winnerColor === 'Black');
-            resultText = iAmWinner ? "You Won!" : "You Lost!";
-        }
-
-        showResultPopup(resultText);
-
-    } else if (game.in_draw && game.in_draw()) {
+        // Replaced alert with Custom Modal
+        showGameOverModal("Checkmate!", `${winnerName} wins!`);
+    } else if (game.in_draw && game.in_draw()) { // Checking generic 50-move or stalemate if supported by logic
         stopTimer();
-        showGameOverModal("Draw", "Game ended in a draw.");
+        showGameOverModal("Draw", "Game ended in a draw (Stalemate/Repetition).");
     }
 }
 

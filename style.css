@@ -343,6 +343,48 @@ h1 {
     transition: transform 0.1s ease;
 }
 
+/* Falling King Animation */
+@keyframes fall-over {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    20% {
+        transform: rotate(5deg);
+    }
+
+    40% {
+        transform: rotate(-5deg);
+    }
+
+    60% {
+        transform: rotate(10deg);
+    }
+
+    100% {
+        transform: rotate(90deg) scale(0.9);
+    }
+}
+
+.piece.cracked {
+    /* Keeping filter for look, changing transform to animation */
+    filter: sepia(100%) hue-rotate(-50deg) saturate(300%) contrast(1.2) drop-shadow(2px 4px 6px black);
+    animation: fall-over 1.5s forwards ease-in-out;
+    transform-origin: bottom center;
+}
+
+.square.checkmate-highlight {
+    animation: to-red 1s forwards ease-out;
+}
+
+@keyframes to-red {
+    to {
+        background-color: #d63031;
+        /* Strong Red */
+        box-shadow: inset 0 0 20px #000;
+    }
+}
+
 /* Controls Footer */
 .controls {
     display: flex;
@@ -699,72 +741,4 @@ button:hover {
     border-radius: 50%;
     margin-left: 5px;
     vertical-align: middle;
-}
-
-/* Dust Disintegration Effect */
-@keyframes disintegrate {
-    0% {
-        transform: scale(1) translate(0, 0);
-        opacity: 1;
-        filter: blur(0px);
-    }
-
-    100% {
-        transform: scale(0.5) translate(var(--tx), var(--ty)) rotate(var(--rot));
-        opacity: 0;
-        filter: blur(4px);
-    }
-}
-
-.dust-piece {
-    animation: disintegrate 1.5s ease-out forwards;
-    pointer-events: none;
-    /* No interaction during/after fade */
-    transform-origin: center center;
-}
-
-/* Temporary Result Popup */
-.result-popup {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.85);
-    color: #ffd700;
-    padding: 20px 40px;
-    border-radius: 15px;
-    font-size: 3rem;
-    font-weight: bold;
-    z-index: 3000;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-    border: 2px solid #ffd700;
-    opacity: 0;
-    animation: popInAndOut 2.5s forwards;
-    pointer-events: none;
-}
-
-@keyframes popInAndOut {
-    0% {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(0.5);
-    }
-
-    15% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1.1);
-    }
-
-    25% {
-        transform: translate(-50%, -50%) scale(1);
-    }
-
-    80% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-    }
-
-    100% {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(0.9);
-    }
 }
