@@ -5,6 +5,7 @@ y
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
     <title>Chess</title>
     <link rel="stylesheet" href="style.css">
     <style>
@@ -40,46 +41,71 @@ y
 <body>
     <!-- Menu Screen -->
     <div id="menu-screen" class="screen active">
-        <h1 class="game-title">CHESS<br>MASTER</h1>
+        <h1 class="game-title">♕<br>CHESS MASTER</h1>
         <div class="menu-content">
+            <!-- Shared Name Input (Always Top) -->
             <div class="input-group">
                 <input type="text" id="name-input" class="capsule-input" placeholder="Enter Your Name">
             </div>
 
-            <button id="play-local-btn" class="menu-btn btn-gold">
-                <span class="btn-text">Play Local (2P)</span>
-            </button>
+            <!-- 1. Primary Menu Buttons -->
+            <div id="menu-primary" class="menu-section">
+                <!-- Play Local: Green Style now -->
+                <button id="play-local-btn" class="menu-btn btn-gold">
+                    <span class="btn-text">👥 Play vs Friend (Local)</span>
+                </button>
 
-            <button id="create-room-btn" class="menu-btn btn-blue">
-                <span class="btn-text">♞ Create Room</span>
-            </button>
+                <!-- Create Room: Blue Style -->
+                <button id="create-room-btn" class="menu-btn btn-blue">
+                    <span class="btn-text">♞ Create Room</span>
+                </button>
 
-            <div class="input-group">
-                <input type="text" id="room-code-input" class="capsule-input" placeholder="Enter Room Code"
-                    maxlength="6">
+                <!-- Join Room: Purple Style (mapped to btn-green in CSS) -->
+                <button id="join-options-btn" class="menu-btn btn-green">
+                    <span class="btn-text">🔗 Join Room</span>
+                </button>
             </div>
 
-            <button id="join-room-btn" class="menu-btn btn-green">
-                <span class="btn-text">Join Room</span>
-            </button>
+            <!-- 2. Join Room View -->
+            <div id="menu-join" class="menu-section hidden">
+                <div class="input-group">
+                    <input type="text" id="room-code-input" class="capsule-input" placeholder="Enter Room Code"
+                        maxlength="6">
+                </div>
+                <button id="join-room-confirm-btn" class="menu-btn btn-green">
+                    <span class="btn-text">Join Now</span>
+                </button>
+                <button id="join-back-btn" class="menu-btn btn-secondary" style="border:none; margin-top:5px;">
+                    <span class="btn-text" style="padding:10px; font-size:1rem;">← Back</span>
+                </button>
+            </div>
+
+            <!-- 3. Waiting View (In-Lobby) -->
+            <div id="menu-waiting" class="menu-section hidden">
+                <h3 style="margin: 0; margin-bottom: 10px; color: #ccc;">Room Created!</h3>
+                <div
+                    style="display: flex; flex-direction: column; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px;">
+                    <span style="color: #aaa; font-size: 0.9rem;">Share this code:</span>
+                    <h1 id="display-room-code"
+                        style="font-size: 3.5rem; color: #ffd700; margin: 0; letter-spacing: 5px; text-shadow: 2px 2px 0 #000;">
+                        ------</h1>
+                    <button id="copy-code-btn" class="secondary-btn" style="padding: 5px 15px; font-size: 0.9rem;">Copy
+                        Code</button>
+                </div>
+                <div style="margin-top: 20px;">
+                    <div class="loader" style="margin-bottom: 10px;"></div>
+                    <p>Waiting for opponent...</p>
+                </div>
+                <button id="cancel-wait-btn" class="menu-btn btn-secondary"
+                    style="border-color: #d9534f; margin-top: 10px;">
+                    <span class="btn-text" style="color: #d9534f; padding: 10px; font-size: 1rem;">Cancel</span>
+                </button>
+            </div>
 
             <div id="menu-error"
                 style="color: #ff6b6b; margin-top: 10px; height: 20px; font-weight: bold; text-shadow: 1px 1px 2px black;">
             </div>
         </div>
-    </div>
-
-    <!-- Waiting Screen -->
-    <div id="waiting-screen" class="screen hidden">
-        <h2>Waiting for Opponent...</h2>
-        <p>Your Room Code:</p>
-        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-            <h1 id="display-room-code" style="font-size: 3rem; color: yellow; margin: 0;">------</h1>
-            <button id="copy-code-btn" class="secondary-btn"
-                style="padding: 5px 10px; font-size: 1rem; cursor: pointer;">Copy</button>
-        </div>
-        <p>Share this code with your friend.</p>
-        <button id="cancel-wait-btn" class="secondary-btn">Cancel</button>
     </div>
 
     <!-- Game Screen -->

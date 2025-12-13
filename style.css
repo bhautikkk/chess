@@ -1,4 +1,5 @@
 :root {
+    color-scheme: light dark;
     --light-square: #f0d9b5;
     --dark-square: #b58863;
     --highlight: rgba(255, 255, 0, 0.5);
@@ -54,143 +55,243 @@ body {
 
 /* Menu Styles */
 #menu-screen {
-    background: url('lobby-bg.png') no-repeat center center/cover;
+    position: relative;
     font-family: 'Segoe UI', sans-serif;
+    overflow: hidden;
+    /* Ensure blur doesn't leak */
 }
 
-.game-title {
-    font-family: 'Impact', 'Arial Black', sans-serif;
-    font-size: 5rem;
-    line-height: 0.9;
-    margin-bottom: 20px;
-    text-align: center;
-    text-transform: uppercase;
-    color: #ffffff;
-    text-shadow: 2px 2px 0px #000;
-    /* Removed gold gradient to match "Big White Text" style usually found in these designs, 
-       but if user wants gold we can revert. Image looked White. */
+/* Background Image with Blur */
+#menu-screen::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('bg.png') no-repeat center center/cover;
+    filter: blur(4px);
+    /* Slight blur ("halka sa") */
+    z-index: -1;
+    transform: scale(1.02);
+    /* Slight scale to hide blurred edges */
 }
 
+/* Glassmorphism Panel - Light Glass Reference */
 .menu-content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15px;
-    /* Tighter gap */
+    gap: 30px;
     width: 320px;
+
+    /* Diagonal Reflection Effect */
+    background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.15) 0%,
+            rgba(255, 255, 255, 0.15) 45%,
+            rgba(255, 255, 255, 0.05) 45%,
+            rgba(255, 255, 255, 0.05) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.5);
+    /* Stronger top border for light */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    border-radius: 20px;
+    padding: 50px 30px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.game-title {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    font-size: 3rem;
+    margin-bottom: 30px;
+    text-align: center;
+    text-transform: uppercase;
+    color: #ffffff;
+    letter-spacing: 3px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .input-group {
     width: 100%;
     margin: 0;
-    background: transparent;
-    box-shadow: none;
     padding: 0;
 }
 
+/* Gray Pill Input */
 .capsule-input {
     width: 100%;
     box-sizing: border-box;
     padding: 15px 20px;
-    border-radius: 10px;
-    /* Rounded Rect looks closer to image than full pill */
-    border: 2px solid #ffffff;
-    /* White border */
-    background: rgba(255, 255, 255, 0.1);
-    /* Transparent/Dark bg */
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    /* Thinner, lighter border */
+    background: rgba(128, 128, 128, 0.4);
+    /* Grayish transparent */
     color: #ffffff;
     font-size: 1.1rem;
     text-align: center;
     font-family: 'Segoe UI', sans-serif;
     outline: none;
-    box-shadow: none;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    /* Inset shadow for depth */
+}
+
+.capsule-input:focus {
+    background: rgba(128, 128, 128, 0.6);
+    border-color: #ffffff;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
 }
 
 .capsule-input::placeholder {
-    color: #cccccc;
+    color: rgba(255, 255, 255, 0.8);
 }
 
-/* 3D Buttons */
-.menu-btn {
+/* Menu Section Transitions */
+.menu-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
     width: 100%;
+    /* Smooth Entry Animation */
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+        /* Start slightly lower */
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+        /* Rise to position */
+    }
+}
+
+/* Neon Buttons - Vertical Gradient & Permanent Glow */
+.menu-btn {
+    width: 90%;
     padding: 0;
-    border-radius: 10px;
-    border: 2px solid #ffffff;
-    /* White Border */
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    /* Subtle white border */
     background: transparent;
     cursor: pointer;
     position: relative;
-    transition: transform 0.1s, filter 0.2s;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
     text-decoration: none;
-    overflow: hidden;
-    margin: 0;
+    overflow: visible;
+    margin: 0 auto;
+    display: block;
+    /* Kept pulse but make it subtler or standard */
+    animation: pulseGlow 4s infinite alternate;
+    background-clip: padding-box;
 }
 
-.menu-btn:active {
-    transform: translateY(2px);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+@keyframes pulseGlow {
+    0% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+
+    100% {
+        transform: scale(1.02);
+        filter: brightness(1.1);
+    }
 }
 
 .btn-text {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
     width: 100%;
-    padding: 15px 0;
-    font-size: 1.3rem;
-    font-weight: 700;
-    /* Bold */
-    text-transform: none;
-    /* Reference image usually has Title Case or Sentence Case, keeping mostly standard */
-    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
-    color: #000;
-    /* Default text color for visibility on light buttons */
-    border-radius: 8px;
+    padding: 16px 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #ffffff;
+    border-radius: 46px;
+    background: transparent;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-/* Gold Button - Play Local */
+/* Local - Green (Top to Bottom) */
 .btn-gold {
-    background: #e6b800;
-    /* Fallback */
-    border-color: #ffffff;
+    border-color: #55efc4;
+    background: linear-gradient(to bottom, #55efc4, #00b894);
+    /* Bright green to Darker green */
+    box-shadow: 0 0 20px rgba(0, 184, 148, 0.6);
 }
 
-.btn-gold .btn-text {
-    background: linear-gradient(to bottom, #f3d463 0%, #e6b800 100%);
-    color: #000000;
-    border: none;
-    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4);
+.btn-gold:hover {
+    box-shadow: 0 0 40px #55efc4;
 }
 
-/* Blue Button - Create Room */
+/* Create - Blue (Top to Bottom) */
 .btn-blue {
-    background: #2e86de;
-    border-color: #ffffff;
+    border-color: #74b9ff;
+    background: linear-gradient(to bottom, #74b9ff, #0984e3);
+    /* Bright blue to Darker blue */
+    box-shadow: 0 0 20px rgba(9, 132, 227, 0.6);
 }
 
-.btn-blue .btn-text {
-    background: linear-gradient(to bottom, #54a0ff 0%, #2e86de 100%);
-    color: #ffffff;
-    border: none;
-    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4);
+.btn-blue:hover {
+    box-shadow: 0 0 40px #74b9ff;
 }
 
-/* Green Button - Join Room */
+/* Join - Purple (Top to Bottom) */
+/* Join - Purple (Top to Bottom) */
 .btn-green {
-    background: #27ae60;
-    border-color: #ffffff;
+    border-color: #a29bfe;
+    background: linear-gradient(to bottom, #a29bfe, #6c5ce7);
+    box-shadow: 0 0 20px rgba(108, 92, 231, 0.6);
 }
 
-.btn-green .btn-text {
-    background: linear-gradient(to bottom, #2ecc71 0%, #27ae60 100%);
-    color: #ffffff;
-    border: none;
-    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4);
+.btn-green:hover {
+    box-shadow: 0 0 40px #a29bfe;
 }
 
-/* Remove old hover styles that might conflict */
-.menu-btn:hover {
-    filter: brightness(1.1);
+/* Cancel - Red (Top to Bottom) */
+.btn-red {
+    border-color: #ff7675;
+    background: linear-gradient(to bottom, #ff7675, #d63031);
+    /* Light red to dark red */
+    box-shadow: 0 0 20px rgba(214, 48, 49, 0.6);
 }
+
+.btn-red:hover {
+    box-shadow: 0 0 40px #ff7675;
+}
+
+/* Back/Secondary - Gray (Top to Bottom) */
+.btn-secondary {
+    border-color: #b2bec3;
+    background: linear-gradient(to bottom, #dfe6e9, #636e72);
+    /* Light gray to dark gray */
+    box-shadow: 0 0 20px rgba(99, 110, 114, 0.6);
+}
+
+.btn-secondary:hover {
+    box-shadow: 0 0 40px #dfe6e9;
+}
+
+/* Click Animation */
+.menu-btn:active {
+    transform: scale(0.96) !important;
+    animation: none;
+    filter: brightness(0.9);
+}
+
+/* Dim on press */
 
 /* Game Container */
 .game-container {
@@ -346,6 +447,7 @@ h1 {
     background-position: center;
     pointer-events: none;
     transition: transform 0.1s ease;
+    forced-color-adjust: none;
 }
 
 /* Cracked King Animation */

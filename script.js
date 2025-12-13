@@ -13,9 +13,14 @@ const playerBottomElement = document.getElementById('player-bottom');
 const menuErrorElement = document.getElementById('menu-error');
 
 // Screens
+// Screens
 const menuScreen = document.getElementById('menu-screen');
 const gameScreen = document.getElementById('game-screen');
-const waitingScreen = document.getElementById('waiting-screen');
+
+// Menu Sections
+const menuPrimary = document.getElementById('menu-primary');
+const menuJoin = document.getElementById('menu-join');
+const menuWaiting = document.getElementById('menu-waiting');
 
 // Timer State
 let whiteTime = 900; // seconds
@@ -40,7 +45,7 @@ let currentHistoryIndex = -1; // -1 means live game
 
 // Screen Handling
 function showScreen(screen) {
-    [menuScreen, gameScreen, waitingScreen].forEach(s => {
+    [menuScreen, gameScreen].forEach(s => {
         if (s) {
             s.classList.add('hidden');
             s.classList.remove('active');
@@ -52,6 +57,14 @@ function showScreen(screen) {
     }
 
     // Clear error when switching screens
+    if (menuErrorElement) menuErrorElement.innerText = '';
+}
+
+function showMenuSection(section) {
+    [menuPrimary, menuJoin, menuWaiting].forEach(s => {
+        if (s) s.classList.add('hidden');
+    });
+    if (section) section.classList.remove('hidden');
     if (menuErrorElement) menuErrorElement.innerText = '';
 }
 
@@ -196,16 +209,33 @@ document.getElementById('create-room-btn').addEventListener('click', () => {
         return;
     }
     socket.emit('createRoom', name);
+    // UI update handled in socket.on('roomCreated')
 });
 
-// Join Room
-document.getElementById('join-room-btn').addEventListener('click', () => {
+// Join Options (Drill-down)
+const joinOptionsBtn = document.getElementById('join-options-btn');
+if (joinOptionsBtn) {
+    joinOptionsBtn.addEventListener('click', () => {
+        const name = document.getElementById('name-input').value.trim();
+        if (!name) {
+            showError("Please enter your name first!");
+            return;
+        }
+        showMenuSection(menuJoin);
+    });
+}
+
+// Join Room Confirm
+document.getElementById('join-room-confirm-btn').addEventListener('click', () => {
     const name = document.getElementById('name-input').value.trim();
+    const code = document.getElementById('room-code-input').value;
+
+    // Name check again just in case (though should be entered to get here)
     if (!name) {
-        showError("Please enter your name first!");
+        showError("Please enter your name.");
         return;
     }
-    const code = document.getElementById('room-code-input').value;
+
     if (code && code.length === 6) {
         socket.emit('joinRoom', { code: code, name: name });
     } else {
@@ -213,15 +243,34 @@ document.getElementById('join-room-btn').addEventListener('click', () => {
     }
 });
 
-// Back Buttons
+// Back from Join
+const joinBackBtn = document.getElementById('join-back-btn');
+if (joinBackBtn) {
+    joinBackBtn.addEventListener('click', () => {
+        showMenuSection(menuPrimary);
+    });
+}
+
+
+// Back Buttons (Game -> Menu)
 document.getElementById('back-menu-btn').addEventListener('click', () => {
     if (gameMode === 'multiplayer') {
         location.reload();
     } else {
         showScreen(menuScreen);
+        showMenuSection(menuPrimary);
     }
 });
+
+// Cancel Wait
 document.getElementById('cancel-wait-btn').addEventListener('click', () => {
+    // Resetting mostly means just going back. 
+    // Socket doesn't have explicit 'cancel room', but reloading is safest to clear state on server if strictly needed,
+    // but cleaner UI is just going back. 
+    // Ideally we should tell server "I left".
+    // For now, reload is safest for network state, BUT user wants "yhi lobby rhe".
+    // If we just hide, the socket room is still active.
+    // Let's reload to be safe, OR emit leave.
     location.reload();
 });
 
@@ -428,7 +477,8 @@ socket.on('roomCreated', (roomCode) => {
     gameMode = 'multiplayer';
     playerColor = 'w';
     document.getElementById('display-room-code').innerText = roomCode;
-    showScreen(waitingScreen);
+    // Switch to waiting/created section
+    showMenuSection(menuWaiting);
 });
 
 socket.on('gameStart', (data) => {
