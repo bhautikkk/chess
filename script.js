@@ -391,11 +391,33 @@ function crackKing(winnerColor) {
 }
 
 // --- Audio ---
+// --- Audio ---
 const moveSound = new Audio('move.mp3');
+const checkSound = new Audio('check.mp3');
 
 function playMoveSound() {
-    moveSound.currentTime = 0;
-    moveSound.play().catch(e => console.log("Audio play failed: ", e));
+    // Determine sound based on current state (called after move)
+    // game.turn is the side that just received the move.
+    const isCheck = game.isKingInCheck(game.turn);
+    let soundToPlay = moveSound;
+
+    if (isCheck) {
+        if (gameMode === 'multiplayer') {
+            // If I am the one in check (It is now MY turn), play check sound.
+            // If I am the one who GAVE check (It is NOT my turn), play move sound.
+            if (playerColor === game.turn) {
+                soundToPlay = checkSound;
+            } else {
+                soundToPlay = moveSound;
+            }
+        } else {
+            // Local game: Always play check sound on check
+            soundToPlay = checkSound;
+        }
+    }
+
+    soundToPlay.currentTime = 0;
+    soundToPlay.play().catch(e => console.log("Audio play failed: ", e));
 }
 
 
