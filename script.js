@@ -285,7 +285,7 @@ if (resignBtn) {
 
 const rematchControlBtn = document.createElement('button');
 rematchControlBtn.id = 'control-rematch-btn';
-rematchControlBtn.innerText = 'Rematch';
+rematchControlBtn.innerHTML = '⚔️ Rematch';
 rematchControlBtn.style.display = 'none';
 rematchControlBtn.classList.add('btn-secondary'); // Style like other controls
 document.querySelector('.controls').appendChild(rematchControlBtn);
@@ -347,7 +347,7 @@ function showGameOverModal(title, message, isRematch = false) {
     // Show Rematch button in controls
     if (gameMode === 'multiplayer') {
         rematchControlBtn.style.display = 'inline-block';
-        rematchControlBtn.innerText = 'Rematch';
+        rematchControlBtn.innerHTML = '⚔️ Rematch';
         rematchControlBtn.disabled = false;
     }
 
@@ -740,6 +740,15 @@ function renderBoardSimple(customState = null) {
                 pieceElement.style.transform = 'rotate(180deg)';
             }
             square.appendChild(pieceElement);
+
+            // HIGHLIGHT CHECK (Not Checkmate)
+            // Only for live game (no customState)
+            if (!customState && piece.type === 'k' && piece.color === game.turn) {
+                // If this king is in check And NOT checkmate
+                if (game.isKingInCheck(game.turn) && !game.isCheckmate()) {
+                    square.classList.add('check-highlight');
+                }
+            }
         }
 
         square.addEventListener('click', () => onSquareClick(i));

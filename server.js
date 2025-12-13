@@ -55,8 +55,21 @@ io.on('connection', (socket) => {
         }
 
         room.players.push(socket.id);
-        room.black = socket.id;
-        room.blackName = data.name;
+
+        // Randomize Colors
+        if (Math.random() < 0.5) {
+            // Joiner gets White, Creator gets Black
+            room.black = room.white; // Old White (Creator) becomes Black
+            room.blackName = room.whiteName;
+
+            room.white = socket.id; // Joiner becomes White
+            room.whiteName = data.name;
+        } else {
+            // Creator stays White, Joiner gets Black
+            room.black = socket.id;
+            room.blackName = data.name;
+        }
+
         socket.join(roomCode);
 
         // Initialize Timers (15 minutes = 900,000 ms)
@@ -161,15 +174,18 @@ io.on('connection', (socket) => {
             // Both accepted
             room.rematchRequests.clear();
 
-            // Swap colors for variety? Or keep same. Let's keep same for simplicity first, or swap.
-            // Let's Swap!
-            const temp = room.white;
-            room.white = room.black;
-            room.black = temp;
+            // Randomize colors for rematch
+            if (Math.random() < 0.5) {
+                // Swap
+                const temp = room.white;
+                room.white = room.black;
+                room.black = temp;
 
-            const tempName = room.whiteName;
-            room.whiteName = room.blackName;
-            room.blackName = tempName;
+                const tempName = room.whiteName;
+                room.whiteName = room.blackName;
+                room.blackName = tempName;
+            }
+            // Else keep same (effectively random since we start from random state or just 50/50 chance to flip)
 
             io.to(roomCode).emit('gameStart', {
                 white: room.white,

@@ -321,6 +321,11 @@ h1 {
     background-color: var(--selected) !important;
 }
 
+.square {
+    overflow: hidden;
+    /* Prevent pieces from animating outside */
+}
+
 .square.highlight::after {
     content: '';
     width: 30%;
@@ -346,57 +351,134 @@ h1 {
 /* Cracked King Animation */
 .piece.cracked {
     filter: sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8);
-    background-image: linear-gradient(45deg, transparent 45%, #000 50%, transparent 55%), url('piece-image-placeholder');
-    /* Note: url will be set inline by JS, this is just for the gradient overlay */
+    background-image: linear-gradient(45deg, transparent 45%, #000 50%, transparent 55%);
+    transform-origin: center center;
 }
 
 .piece.cracked.normal {
-    animation: tilt-normal 2s ease-in-out infinite alternate;
+    animation: fall-normal 2s ease-in-out forwards;
 }
 
 .piece.cracked.flipped {
-    animation: tilt-flipped 2s ease-in-out infinite alternate;
+    animation: fall-flipped 2s ease-in-out forwards;
 }
 
-@keyframes tilt-normal {
+@keyframes fall-normal {
     0% {
-        transform: rotate(0deg) scale(0.9);
+        transform: translateY(0) scale(1) rotate(0deg);
+        filter: sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8) brightness(1);
+    }
+
+    10% {
+        transform: translateY(0) scale(1.1) rotate(0deg);
+    }
+
+    20% {
+        transform: translateY(0) scale(1.1) rotate(-15deg);
+    }
+
+    30% {
+        transform: translateY(0) scale(1.1) rotate(15deg);
+    }
+
+    40% {
+        transform: translateY(0) scale(1.1) rotate(-5deg);
+    }
+
+    60% {
+        transform: translateY(35%) scale(1) rotate(85deg);
+        filter: sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8) brightness(3);
+    }
+
+    /* IMPACT FLASH */
+    80% {
+        transform: translateY(30%) scale(1.05) rotate(75deg);
+        filter: sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8) brightness(1);
     }
 
     100% {
-        transform: rotate(15deg) scale(0.9);
+        transform: translateY(35%) scale(1) rotate(85deg);
     }
 }
 
-@keyframes tilt-flipped {
+@keyframes fall-flipped {
     0% {
-        transform: rotate(180deg) scale(0.9);
+        transform: translateY(0) scale(1) rotate(180deg);
+        filter: sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8) brightness(1);
+    }
+
+    10% {
+        transform: translateY(0) scale(1.1) rotate(180deg);
+    }
+
+    20% {
+        transform: translateY(0) scale(1.1) rotate(165deg);
+    }
+
+    30% {
+        transform: translateY(0) scale(1.1) rotate(195deg);
+    }
+
+    40% {
+        transform: translateY(0) scale(1.1) rotate(175deg);
+    }
+
+    60% {
+        transform: translateY(-35%) scale(1) rotate(265deg);
+        filter: sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8) brightness(3);
+    }
+
+    /* IMPACT FLASH */
+    80% {
+        transform: translateY(-30%) scale(1.05) rotate(255deg);
+        filter: sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8) brightness(1);
     }
 
     100% {
-        transform: rotate(195deg) scale(0.9);
+        transform: translateY(-35%) scale(1) rotate(265deg);
     }
 }
 
-.piece.cracked::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: repeating-linear-gradient(45deg,
-            transparent,
-            transparent 10px,
-            rgba(0, 0, 0, 0.8) 10px,
-            rgba(0, 0, 0, 0.8) 12px);
-    opacity: 0.7;
-    pointer-events: none;
+
+/* Static Red Highlight for Check */
+.square.check-highlight {
+    background-color: rgba(255, 0, 0, 0.5) !important;
 }
 
 /* Red Pulse for Checkmate Square */
 .square.result-highlight {
     animation: red-pulse 1.5s infinite;
+    z-index: 1;
+}
+
+/* Localized Shockwave Ripple */
+.square.result-highlight::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 50, 50, 0.8) 0%, transparent 70%);
+    animation: shockwave 0.6s ease-out 0.8s forwards;
+    /* Delay to match Slam impact */
+    z-index: 0;
+}
+
+@keyframes shockwave {
+    0% {
+        width: 0;
+        height: 0;
+        opacity: 1;
+    }
+
+    100% {
+        width: 200%;
+        height: 200%;
+        opacity: 0;
+    }
 }
 
 @keyframes red-pulse {
@@ -423,22 +505,41 @@ h1 {
 }
 
 button {
-    padding: 10px 20px;
+    padding: 10px 14px;
     font-size: 1rem;
     cursor: pointer;
     background-color: var(--primary-color);
     border: none;
-    border-radius: 5px;
+    border-radius: 6px;
     color: white;
     font-weight: bold;
-    transition: background-color 0.2s;
-    flex: 1;
-    min-width: 80px;
+    transition: background-color 0.2s, transform 0.1s;
+    flex: 1 1 auto;
+    /* Allow flexible growth */
+    min-width: fit-content;
+    /* Prevent squashing text */
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    /* Icon gap */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-button:hover {
-    background-color: var(--primary-hover);
+button:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.nav-controls {
+    display: flex;
+    gap: 5px;
+    /* margin-bottom remove, let it flow? or keep? */
+    /* The user wants them 'sahi' (correct). 
+       If I lay them out in the flex row, they might look better integrated. 
+       Let's keep them as a group but allow them to flex properly. */
+    flex: 0 0 auto;
 }
 
 .btn-secondary {
