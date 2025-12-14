@@ -44,6 +44,7 @@ let navElements = {
 };
 let currentHistoryIndex = -1; // -1 means live game
 let isGameOver = false; // Track if game has ended
+let isAnimating = false; // Track if a move animation is in progress
 
 // Screen Handling
 function showScreen(screen) {
@@ -807,6 +808,7 @@ function updateGameInfoHeader(isLocal) {
 // --- Animation Helper (Floating Clone) ---
 function animateMove(fromIndex, toIndex) {
     return new Promise((resolve) => {
+        isAnimating = true; // Lock interaction
         const fromSquare = document.querySelector(`.square[data-index="${fromIndex}"]`);
         const toSquare = document.querySelector(`.square[data-index="${toIndex}"]`);
 
@@ -851,12 +853,14 @@ function animateMove(fromIndex, toIndex) {
         // Cleanup after animation
         clone.addEventListener('transitionend', () => {
             clone.remove();
+            isAnimating = false; // Unlock
             resolve();
         }, { once: true });
 
         // Fallback
         setTimeout(() => {
             if (document.body.contains(clone)) clone.remove();
+            isAnimating = false; // Unlock (safety net)
             resolve();
         }, 200);
     });
@@ -972,6 +976,9 @@ function completeMove(move, promotionType = null) {
 
 
 function onSquareClick(index) {
+    // Prevent interaction during animation
+    if (isAnimating) return;
+
     // Disable interaction if viewing history
     if (currentHistoryIndex !== -1) {
         showToast("Jump to live to make a move.");
