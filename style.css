@@ -948,14 +948,53 @@ button:active {
         font-size: 1rem;
     }
 
+    /* Fix oversized title on mobile */
     #menu-screen h1 {
-        font-size: 3rem;
+        font-size: 1.8rem;
+        /* Reduced from 3rem */
+        margin-bottom: 5px;
+    }
+
+    .crown-icon {
+        font-size: 2.5rem;
+        /* Reduced icon size */
+    }
+
+    /* Make menu elements more compact on mobile */
+    .glass-card {
+        padding: 20px 10px;
+        /* Slimmer padding */
+        gap: 10px;
+        /* Reduced gap */
+        width: min(260px, 80vw);
+        /* Kept original width */
+    }
+
+    .menu-btn {
+        padding: 10px 16px;
+        /* Smaller button padding */
+        gap: 8px;
+    }
+
+    .btn-text {
+        font-size: 0.95rem;
+        /* Slightly smaller text */
+    }
+
+    .btn-icon {
+        font-size: 1.1rem;
+    }
+
+    .glass-input {
+        padding: 10px;
+        font-size: 0.95rem;
     }
 
     .controls {
         gap: 5px;
     }
 
+    /* General button check */
     button {
         padding: 8px 12px;
         font-size: 0.9rem;
