@@ -45,6 +45,7 @@ let navElements = {
 let currentHistoryIndex = -1; // -1 means live game
 let isGameOver = false; // Track if game has ended
 let isAnimating = false; // Track if a move animation is in progress
+let movingFromIndex = -1; // Track which square is currently animating FROM (to hide static piece)
 let moveQueue = []; // Queue for incoming moves
 let isProcessingMove = false; // Lock for queue processing
 
@@ -825,71 +826,76 @@ function updateGameInfoHeader(isLocal) {
 }
 
 // --- Animation Helper (Floating Clone) ---
-function animateMove(fromIndex, toIndex) {
-    return new Promise((resolve) => {
-        // Safety: Remove any existing clones (Ghost pieces)
-        document.querySelectorAll('.anim-clone').forEach(el => el.remove());
+return new Promise((resolve) => {
+    // Safety: Remove any existing clones (Ghost pieces)
+    document.querySelectorAll('.anim-clone').forEach(el => el.remove());
 
-        isAnimating = true; // Lock interaction
-        const fromSquare = document.querySelector(`.square[data-index="${fromIndex}"]`);
-        const toSquare = document.querySelector(`.square[data-index="${toIndex}"]`);
+    isAnimating = true; // Lock interaction
+    movingFromIndex = fromIndex; // Hide the static piece at this source
 
-        if (!fromSquare || !toSquare) {
-            isAnimating = false;
-            resolve();
-            return;
-        }
+    const fromSquare = document.querySelector(`.square[data-index="${fromIndex}"]`);
+    const toSquare = document.querySelector(`.square[data-index="${toIndex}"]`);
 
-        const piece = fromSquare.querySelector('.piece');
-        if (!piece) {
-            isAnimating = false;
-            resolve();
-            return;
-        }
+    if (!fromSquare || !toSquare) {
+        isAnimating = false;
+        movingFromIndex = -1;
+        resolve();
+        return;
+    }
 
-        // Create Clone for animation
-        const clone = piece.cloneNode(true);
-        clone.classList.add('anim-clone'); // Mark as clone
-        const fromRect = fromSquare.getBoundingClientRect();
-        const toRect = toSquare.getBoundingClientRect();
+    const piece = fromSquare.querySelector('.piece');
+    if (!piece) {
+        isAnimating = false;
+        movingFromIndex = -1;
+        resolve();
+        return;
+    }
 
-        // Style clone to float above everything
-        clone.style.position = 'fixed'; // Fixed to viewport to avoid overflow clipping
-        clone.style.left = `${fromRect.left}px`;
-        clone.style.top = `${fromRect.top}px`;
-        clone.style.width = `${fromRect.width * 0.9}px`; // Match 90% size logic
-        clone.style.height = `${fromRect.height * 0.9}px`;
-        clone.style.zIndex = '1000';
-        clone.style.pointerEvents = 'none'; // Don't block clicks
-        clone.style.transform = 'none'; // Reset rotation (so it doesn't look upside down when appended to body)
-        clone.style.transition = 'all 0.15s ease-out'; // Quick "quick se move"
+    // Create Clone for animation
+    const clone = piece.cloneNode(true);
+    clone.classList.add('anim-clone'); // Mark as clone
+    const fromRect = fromSquare.getBoundingClientRect();
+    const toRect = toSquare.getBoundingClientRect();
 
-        document.body.appendChild(clone);
+    // Style clone to float above everything
+    clone.style.position = 'fixed'; // Fixed to viewport to avoid overflow clipping
+    clone.style.left = `${fromRect.left}px`;
+    clone.style.top = `${fromRect.top}px`;
+    clone.style.width = `${fromRect.width * 0.9}px`; // Match 90% size logic
+    clone.style.height = `${fromRect.height * 0.9}px`;
+    clone.style.zIndex = '1000';
+    clone.style.pointerEvents = 'none'; // Don't block clicks
+    clone.style.transform = 'none'; // Reset rotation (so it doesn't look upside down when appended to body)
+    clone.style.transition = 'all 0.15s ease-out'; // Quick "quick se move"
 
-        // Hide original to prevent duplicate visual
-        piece.style.opacity = '0';
+    document.body.appendChild(clone);
 
-        // Trigger Animation (Next Frame)
-        requestAnimationFrame(() => {
-            clone.style.left = `${toRect.left}px`;
-            clone.style.top = `${toRect.top}px`;
-        });
+    // Hide original to prevent duplicate visual
+    piece.style.opacity = '0';
 
-        // Cleanup after animation
-        clone.addEventListener('transitionend', () => {
-            clone.remove();
-            isAnimating = false; // Unlock
-            resolve();
-        }, { once: true });
-
-        // Fallback
-        setTimeout(() => {
-            if (document.body.contains(clone)) clone.remove();
-            isAnimating = false; // Unlock (safety net)
-            resolve();
-        }, 200);
+    // Trigger Animation (Next Frame)
+    requestAnimationFrame(() => {
+        clone.style.left = `${toRect.left}px`;
+        clone.style.top = `${toRect.top}px`;
     });
-}
+
+    // Cleanup after animation
+    clone.addEventListener('transitionend', () => {
+        clone.remove();
+        isAnimating = false; // Unlock
+        movingFromIndex = -1; // Show static piece again (if it's still there, though logic usually moves it)
+        resolve();
+    }, { once: true });
+
+    // Fallback
+    setTimeout(() => {
+        if (document.body.contains(clone)) clone.remove();
+        isAnimating = false; // Unlock (safety net)
+        movingFromIndex = -1;
+        resolve();
+    }, 200);
+});
+
 
 function renderBoardSimple(customState = null) {
     // Global Cleanup: If we are rendering and NOT animating, wipe all clones
@@ -936,21 +942,27 @@ function renderBoardSimple(customState = null) {
 
         const piece = boardToRender[i];
         if (piece) {
-            const pieceElement = document.createElement('div');
-            pieceElement.classList.add('piece');
-            const key = `${piece.color}-${piece.type}`;
-            pieceElement.style.backgroundImage = `url('${PIECE_IMAGES[key]}')`;
-            if (isFlipped) {
-                pieceElement.style.transform = 'rotate(180deg)';
-            }
-            square.appendChild(pieceElement);
+            // State-Based Hiding: If this piece is currently moving from this square, DO NOT render it yet.
+            // The clone is handling the visual.
+            if (isAnimating && i === movingFromIndex) {
+                // Skip rendering logic for this piece, but continue loop
+            } else {
+                const pieceElement = document.createElement('div');
+                pieceElement.classList.add('piece');
+                const key = `${piece.color}-${piece.type}`;
+                pieceElement.style.backgroundImage = `url('${PIECE_IMAGES[key]}')`;
+                if (isFlipped) {
+                    pieceElement.style.transform = 'rotate(180deg)';
+                }
+                square.appendChild(pieceElement);
 
-            // HIGHLIGHT CHECK (Not Checkmate)
-            // Only for live game (no customState)
-            if (!customState && piece.type === 'k' && piece.color === game.turn) {
-                // If this king is in check And NOT checkmate
-                if (game.isKingInCheck(game.turn) && !game.isCheckmate()) {
-                    square.classList.add('check-highlight');
+                // HIGHLIGHT CHECK (Not Checkmate)
+                // Only for live game (no customState)
+                if (!customState && piece.type === 'k' && piece.color === game.turn) {
+                    // If this king is in check And NOT checkmate
+                    if (game.isKingInCheck(game.turn) && !game.isCheckmate()) {
+                        square.classList.add('check-highlight');
+                    }
                 }
             }
         }
