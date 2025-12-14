@@ -834,6 +834,7 @@ function animateMove(fromIndex, toIndex) {
         clone.style.height = `${fromRect.height * 0.9}px`;
         clone.style.zIndex = '1000';
         clone.style.pointerEvents = 'none'; // Don't block clicks
+        clone.style.transform = 'none'; // Reset rotation (so it doesn't look upside down when appended to body)
         clone.style.transition = 'all 0.15s ease-out'; // Quick "quick se move"
 
         document.body.appendChild(clone);
@@ -895,7 +896,7 @@ function renderBoardSimple(customState = null) {
         }
 
         // Highlight Last Move
-        if (lastMove && (i === lastMove.from || i === lastMove.to)) {
+        if (lastMove && i === lastMove.to) {
             square.classList.add('highlight-move');
         }
 

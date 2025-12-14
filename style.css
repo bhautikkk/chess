@@ -130,9 +130,9 @@ body {
     background: linear-gradient(135deg,
             rgba(255, 255, 255, 0.1) 0%,
             rgba(255, 255, 255, 0.02) 100%);
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(2px);
     /* Reduced blur for clearer glass */
-    -webkit-backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(2px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-top: 1px solid rgba(255, 255, 255, 0.3);
     border-left: 1px solid rgba(255, 255, 255, 0.3);
@@ -571,9 +571,9 @@ h1 {
 }
 
 .highlight-move {
-    background-color: rgba(135, 206, 250, 0.5) !important;
-    /* Strong Lite sky colour */
-    box-shadow: inset 0 0 10px rgba(135, 206, 250, 0.3) !important;
+    background-color: rgba(173, 216, 230, 0.4) !important;
+    /* Very light blue */
+    box-shadow: inset 0 0 5px rgba(173, 216, 230, 0.3) !important;
 }
 
 
