@@ -808,23 +808,29 @@ function updateGameInfoHeader(isLocal) {
 // --- Animation Helper (Floating Clone) ---
 function animateMove(fromIndex, toIndex) {
     return new Promise((resolve) => {
+        // Safety: Remove any existing clones (Ghost pieces)
+        document.querySelectorAll('.anim-clone').forEach(el => el.remove());
+
         isAnimating = true; // Lock interaction
         const fromSquare = document.querySelector(`.square[data-index="${fromIndex}"]`);
         const toSquare = document.querySelector(`.square[data-index="${toIndex}"]`);
 
         if (!fromSquare || !toSquare) {
+            isAnimating = false;
             resolve();
             return;
         }
 
         const piece = fromSquare.querySelector('.piece');
         if (!piece) {
+            isAnimating = false;
             resolve();
             return;
         }
 
         // Create Clone for animation
         const clone = piece.cloneNode(true);
+        clone.classList.add('anim-clone'); // Mark as clone
         const fromRect = fromSquare.getBoundingClientRect();
         const toRect = toSquare.getBoundingClientRect();
 
@@ -942,6 +948,11 @@ function completeMove(move, promotionType = null) {
         move.promotion = promotionType;
     }
 
+    // Clear selection immediately to prevent double-clicks
+    selectedSquare = null;
+    validMoves = [];
+    renderBoardSimple(); // Remove highlights immediately (optional but cleaner)
+
     // Detect Capture (Local/Self)
     // Check BEFORE making the move on the board
     const piece = game.board[move.from];
@@ -966,8 +977,8 @@ function completeMove(move, promotionType = null) {
             });
         }
 
-        selectedSquare = null;
-        validMoves = [];
+        // selectedSquare = null; // already cleared
+        // validMoves = []; // already cleared
         renderBoardSimple();
         checkGameOver();
     });
