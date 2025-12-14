@@ -84,7 +84,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 320px;
+    width: min(350px, 90vw);
     padding: 40px 30px;
     border-radius: 20px;
 
@@ -128,7 +128,8 @@ body {
     padding: 15px 20px;
     border-radius: 50px;
     border: 1px solid rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+    /* Darker/Grayish as per image */
     color: white;
     font-size: 1rem;
     outline: none;
@@ -189,7 +190,8 @@ body {
 }
 
 .btn-text {
-    font-size: 1rem;
+    font-size: 1.2rem;
+    /* Larger text for mobile */
     font-weight: 600;
     color: white;
     text-transform: capitalize;
@@ -205,10 +207,22 @@ body {
 .btn-green {
     background: linear-gradient(90deg, #2ecc71, #27ae60);
     /* Fallback/Base */
+    /* Vibrant Neon Green */
+    background: linear-gradient(90deg, #00f260 0%, #0575e6 100%);
+    /* Fallback or cool combo */
+    background: linear-gradient(90deg, #2af598 0%, #009efd 100%);
+    /* Too blue? */
+    background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+    /* Nice Green/Teal */
+    background: linear-gradient(90deg, #11998e 0%, #38ef7d 100%);
+    /* Deep Green to Bright Green */
+
+    /* Let's stick to a specific "Green" that looks like the image (Bright Green left, slightly darker right) */
     background: linear-gradient(90deg, #42e695 0%, #3bb2b8 100%);
-    /* Minty Green */
-    box-shadow: 0 0 15px rgba(66, 230, 149, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    /* Kept this but increased glow */
+
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 15px rgba(66, 230, 149, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.2);
 }
 
 .btn-green:hover {
@@ -220,10 +234,10 @@ body {
     background: linear-gradient(90deg, #3498db, #2980b9);
     background: linear-gradient(90deg, #2980b9 0%, #2c3e50 100%);
     /* Darker Blue ?? reference image is Bright Blue */
+    /* Vibrant Neon Blue */
     background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
-    /* Bright Cyan/Blue */
-    box-shadow: 0 0 15px rgba(79, 172, 254, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 15px rgba(79, 172, 254, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.2);
 }
 
 .btn-blue:hover {
@@ -235,10 +249,18 @@ body {
     background: linear-gradient(90deg, #9b59b6, #8e44ad);
     background: linear-gradient(90deg, #a18cd1 0%, #fbc2eb 100%);
     /* Light Purple? No image is deep purple */
+    /* Vibrant Neon Purple */
+    background: linear-gradient(90deg, #b721ff 0%, #21d4fd 100%);
+    /* Too busy? */
     background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    /* Deep Purple */
-    box-shadow: 0 0 15px rgba(118, 75, 162, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    /* Deep Purple logic */
+    background: linear-gradient(90deg, #a18cd1 0%, #fbc2eb 100%);
+    /* Too light */
+    background: linear-gradient(90deg, #8e2de2 0%, #4a00e0 100%);
+    /* Rich Purple */
+
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 15px rgba(138, 43, 226, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.2);
 }
 
 .btn-purple:hover {

@@ -445,24 +445,33 @@ function crackKing(winnerColor) {
 // --- Audio ---
 const moveSound = new Audio('move.mp3');
 const checkSound = new Audio('check.mp3');
+const takeSound = new Audio('take.mp3');
 
-function playMoveSound() {
+function playMoveSound(isCapture = false) {
     // Determine sound based on current state (called after move)
     // game.turn is the side that just received the move.
     const isCheck = game.isKingInCheck(game.turn);
-    let soundToPlay = moveSound;
+    let soundToPlay = isCapture ? takeSound : moveSound;
 
     if (isCheck) {
         if (gameMode === 'multiplayer') {
             // If I am the one in check (It is now MY turn), play check sound.
-            // If I am the one who GAVE check (It is NOT my turn), play move sound.
+            // If I am the one who GAVE check (It is NOT my turn), play move sound (or take sound if captured).
+            // Actually, usually check implies a "warning" sound for the victim.
+            // For the attacker, they might want to hear the capture.
+            // Let's implement: Victim hears 'check', Attacker hears 'take' (if capture) or 'move'.
+
             if (playerColor === game.turn) {
+                // I am the victim (it's my turn now)
                 soundToPlay = checkSound;
             } else {
-                soundToPlay = moveSound;
+                // I am the attacker
+                soundToPlay = isCapture ? takeSound : moveSound;
             }
         } else {
             // Local game: Always play check sound on check
+            // Or maybe check sound should override capture in local?
+            // Usually check sound is more important.
             soundToPlay = checkSound;
         }
     }
@@ -540,6 +549,13 @@ socket.on('move', (data) => {
     // If simple move object (local/legacy), handle gracefully
     let moveData = data.move || data;
 
+    // Detect Capture (Remote)
+    // We must check BEFORE making the move
+    const piece = game.board[moveData.from];
+    // Check standard capture or en passant
+    const isCapture = (game.board[moveData.to] !== null) ||
+        (piece && piece.type === 'p' && moveData.to === game.enPassantTarget);
+
     game.makeMoveInternal(moveData);
 
     // Auto-jump to live if viewing history (User request: "board par saare pices update ho jaye")
@@ -548,7 +564,7 @@ socket.on('move', (data) => {
         showToast("New Move! Jumped to live.");
     }
 
-    playMoveSound();
+    playMoveSound(isCapture);
     renderBoardSimple();
 
     // Sync Time
@@ -846,9 +862,15 @@ function completeMove(move, promotionType = null) {
         move.promotion = promotionType;
     }
 
+    // Detect Capture (Local/Self)
+    // Check BEFORE making the move on the board
+    const piece = game.board[move.from]; // Should exist
+    const isCapture = (game.board[move.to] !== null) ||
+        (piece && piece.type === 'p' && move.to === game.enPassantTarget);
+
     game.makeMove(move);
     currentHistoryIndex = -1; // Ensure we are looking at live
-    playMoveSound();
+    playMoveSound(isCapture);
 
     if (gameMode === 'multiplayer') {
         socket.emit('move', {

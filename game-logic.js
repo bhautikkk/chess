@@ -41,13 +41,6 @@ class ChessGame {
         this.halfMoveClock = 0;
         this.fullMoveNumber = 1;
         this.history = [];
-        this.board = [];
-        this.turn = 'w'; // 'w' or 'b'
-        this.castling = { w: { k: true, q: true }, b: { k: true, q: true } };
-        this.enPassantTarget = null; // Square like 'e3' if available
-        this.halfMoveClock = 0;
-        this.fullMoveNumber = 1;
-
         this.reset();
     }
 
@@ -125,10 +118,16 @@ class ChessGame {
         return moves.filter(move => {
             // Apply move temporarily
             const savedState = this.saveState();
-            this.makeMoveInternal(move, false); // Don't record history for simulation
-            const isCheck = this.isKingInCheck(piece.color);
-            this.restoreState(savedState);
-            return !isCheck;
+            try {
+                this.makeMoveInternal(move, false); // Don't record history for simulation
+                const isCheck = this.isKingInCheck(piece.color);
+                return !isCheck;
+            } catch (e) {
+                console.error("Simulation error:", e);
+                return false; // Treat error moves as invalid
+            } finally {
+                this.restoreState(savedState);
+            }
         });
     }
 
