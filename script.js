@@ -892,6 +892,11 @@ function animateMove(fromIndex, toIndex) {
 }
 
 function renderBoardSimple(customState = null) {
+    // Global Cleanup: If we are rendering and NOT animating, wipe all clones
+    if (!isAnimating) {
+        document.querySelectorAll('.anim-clone').forEach(el => el.remove());
+    }
+
     const boardToRender = customState ? customState.board : game.board;
     boardElement.innerHTML = '';
 
