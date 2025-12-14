@@ -95,6 +95,9 @@ io.on('connection', (socket) => {
         const room = rooms[data.roomCode];
         if (!room) return;
 
+        // Prevent moves if game is over
+        if (room.gameEnded) return;
+
         // Calculate time usage
         const now = Date.now();
         const elapsed = now - room.lastMoveTime;
@@ -144,6 +147,8 @@ io.on('connection', (socket) => {
     socket.on('drawResponse', (data) => {
         // data = { roomCode, accepted: boolean }
         if (data.accepted) {
+            const room = rooms[data.roomCode];
+            if (room) room.gameEnded = true; // Mark game as ended
             io.to(data.roomCode).emit('gameOver', { reason: 'draw', details: 'Agreed Draw' });
         } else {
             socket.to(data.roomCode).emit('drawRejected');
@@ -152,6 +157,9 @@ io.on('connection', (socket) => {
 
     // Resign
     socket.on('resign', (roomCode) => {
+        const room = rooms[roomCode];
+        if (room) room.gameEnded = true; // Mark game as ended
+
         // The one who requests resign loses. The OTHER wins.
         // We can just tell clients "Resignation" and let them figure out who resigned based on socket.id if needed, 
         // OR just broadcast who resigned.
@@ -173,6 +181,7 @@ io.on('connection', (socket) => {
         if (room.rematchRequests.size >= 2) {
             // Both accepted
             room.rematchRequests.clear();
+            room.gameEnded = false; // Reset game ended flag for new game
 
             // Randomize colors for rematch
             if (Math.random() < 0.5) {

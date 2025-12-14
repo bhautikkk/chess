@@ -42,6 +42,7 @@ let navElements = {
     blackName: "Black"
 };
 let currentHistoryIndex = -1; // -1 means live game
+let isGameOver = false; // Track if game has ended
 
 // Screen Handling
 function showScreen(screen) {
@@ -183,6 +184,7 @@ document.getElementById('play-local-btn').addEventListener('click', () => {
     currentHistoryIndex = -1; // Reset history view
     isFlipped = false;
     currentRoomCode = null;
+    isGameOver = false; // Reset game over state
 
     // Set Local Names
     navElements.whiteName = name;
@@ -501,6 +503,7 @@ socket.on('gameStart', (data) => {
 
         // UI Reset
         game.reset();
+        isGameOver = false; // Reset game over state
         currentHistoryIndex = -1;
 
         // Timer Reset
@@ -608,6 +611,9 @@ socket.on('drawRejected', () => {
 });
 
 socket.on('gameOver', (data) => {
+    isGameOver = true; // Mark game as ended
+    stopTimer(); // Stop the timer immediately
+
     // data = { reason: 'draw' | 'resignation', details, winner }
     let title = "Game Over";
     let msg = "";
@@ -872,6 +878,8 @@ function onSquareClick(index) {
         return;
     }
 
+    if (isGameOver) return; // Prevent moves if game is over
+
     if (gameMode === 'multiplayer' && game.turn !== playerColor) {
         return;
     }
@@ -919,6 +927,7 @@ function checkGameOver() {
     // Note: Timeouts are handled by server event, but we can double check locally? 
     // Server has authority.
     if (game.isCheckmate()) {
+        isGameOver = true; // Local checkmate
         stopTimer();
         const winnerColor = game.turn === 'w' ? 'Black' : 'White';
         const winnerName = winnerColor === 'White' ? navElements.whiteName : navElements.blackName;
@@ -932,6 +941,7 @@ function checkGameOver() {
         // Replaced alert with Custom Modal
         showGameOverModal("Checkmate!", `${winnerName} wins!`);
     } else if (game.in_draw && game.in_draw()) { // Checking generic 50-move or stalemate if supported by logic
+        isGameOver = true;
         stopTimer();
         showGameOverModal("Draw", "Game ended in a draw (Stalemate/Repetition).");
     }
@@ -950,6 +960,7 @@ function updateStatus() {
 
 resetBtn.addEventListener('click', () => {
     game.reset();
+    isGameOver = false; // Reset
     selectedSquare = null;
     validMoves = [];
     isFlipped = false;
