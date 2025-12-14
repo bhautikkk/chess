@@ -35,6 +35,7 @@ let isFlipped = false;
 let gameMode = 'local'; // 'local', 'multiplayer'
 let playerColor = 'w'; // 'w' or 'b' (for multiplayer)
 let currentRoomCode = null;
+let lastMove = null; // Track last move for highlighting {from: index, to: index}
 let navElements = {
     myName: "Me",
     opponentName: "Opponent",
@@ -185,6 +186,7 @@ document.getElementById('play-local-btn').addEventListener('click', () => {
     isFlipped = false;
     currentRoomCode = null;
     isGameOver = false; // Reset game over state
+    lastMove = null; // Reset last move
 
     // Set Local Names
     navElements.whiteName = name;
@@ -195,10 +197,12 @@ document.getElementById('play-local-btn').addEventListener('click', () => {
     renderBoardSimple();
 
     // Start Local Timer
-    whiteTime = 900;
-    blackTime = 900;
-    startTimer();
-    updateTimerUI();
+    // User requested NO timer for local mode
+    // whiteTime = 900;
+    // blackTime = 900;
+    // startTimer();
+    // updateTimerUI();
+    document.querySelectorAll('.player-timer').forEach(el => el.style.display = 'none');
 
     resetBtn.style.display = 'inline-block';
 });
@@ -514,6 +518,7 @@ socket.on('gameStart', (data) => {
         game.reset();
         isGameOver = false; // Reset game over state
         currentHistoryIndex = -1;
+        lastMove = null; // Reset last move
 
         // Timer Reset
         if (data.whiteTime !== undefined) whiteTime = data.whiteTime / 1000;
@@ -523,6 +528,8 @@ socket.on('gameStart', (data) => {
         else blackTime = 900;
 
         updateTimerUI(); // Ensure initial state is rendered correctly
+        // Ensure timers are visible for multiplayer
+        document.querySelectorAll('.player-timer').forEach(el => el.style.display = 'block');
         startTimer();
 
         updateGameInfoHeader(false);
@@ -556,23 +563,29 @@ socket.on('move', (data) => {
     const isCapture = (game.board[moveData.to] !== null) ||
         (piece && piece.type === 'p' && moveData.to === game.enPassantTarget);
 
-    game.makeMoveInternal(moveData);
+    // Execute Animation then Move
+    animateMove(moveData.from, moveData.to).then(() => {
+        game.makeMoveInternal(moveData);
 
-    // Auto-jump to live if viewing history (User request: "board par saare pices update ho jaye")
-    if (currentHistoryIndex !== -1) {
-        currentHistoryIndex = -1;
-        showToast("New Move! Jumped to live.");
-    }
+        // Update Last Move for Highlight (Remote)
+        lastMove = { from: moveData.from, to: moveData.to };
 
-    playMoveSound(isCapture);
-    renderBoardSimple();
+        // Auto-jump to live if viewing history
+        if (currentHistoryIndex !== -1) {
+            currentHistoryIndex = -1;
+            showToast("New Move! Jumped to live.");
+        }
 
-    // Sync Time
-    if (data.whiteTime !== undefined) whiteTime = data.whiteTime / 1000;
-    if (data.blackTime !== undefined) blackTime = data.blackTime / 1000;
-    updateTimerUI();
+        playMoveSound(isCapture);
+        renderBoardSimple();
 
-    checkGameOver();
+        // Sync Time
+        if (data.whiteTime !== undefined) whiteTime = data.whiteTime / 1000;
+        if (data.blackTime !== undefined) blackTime = data.blackTime / 1000;
+        updateTimerUI();
+
+        checkGameOver();
+    });
 });
 
 socket.on('timeSync', (data) => {
@@ -791,6 +804,63 @@ function updateGameInfoHeader(isLocal) {
     updateStatus();
 }
 
+// --- Animation Helper (Floating Clone) ---
+function animateMove(fromIndex, toIndex) {
+    return new Promise((resolve) => {
+        const fromSquare = document.querySelector(`.square[data-index="${fromIndex}"]`);
+        const toSquare = document.querySelector(`.square[data-index="${toIndex}"]`);
+
+        if (!fromSquare || !toSquare) {
+            resolve();
+            return;
+        }
+
+        const piece = fromSquare.querySelector('.piece');
+        if (!piece) {
+            resolve();
+            return;
+        }
+
+        // Create Clone for animation
+        const clone = piece.cloneNode(true);
+        const fromRect = fromSquare.getBoundingClientRect();
+        const toRect = toSquare.getBoundingClientRect();
+
+        // Style clone to float above everything
+        clone.style.position = 'fixed'; // Fixed to viewport to avoid overflow clipping
+        clone.style.left = `${fromRect.left}px`;
+        clone.style.top = `${fromRect.top}px`;
+        clone.style.width = `${fromRect.width * 0.9}px`; // Match 90% size logic
+        clone.style.height = `${fromRect.height * 0.9}px`;
+        clone.style.zIndex = '1000';
+        clone.style.pointerEvents = 'none'; // Don't block clicks
+        clone.style.transition = 'all 0.15s ease-out'; // Quick "quick se move"
+
+        document.body.appendChild(clone);
+
+        // Hide original to prevent duplicate visual
+        piece.style.opacity = '0';
+
+        // Trigger Animation (Next Frame)
+        requestAnimationFrame(() => {
+            clone.style.left = `${toRect.left}px`;
+            clone.style.top = `${toRect.top}px`;
+        });
+
+        // Cleanup after animation
+        clone.addEventListener('transitionend', () => {
+            clone.remove();
+            resolve();
+        }, { once: true });
+
+        // Fallback
+        setTimeout(() => {
+            if (document.body.contains(clone)) clone.remove();
+            resolve();
+        }, 200);
+    });
+}
+
 function renderBoardSimple(customState = null) {
     const boardToRender = customState ? customState.board : game.board;
     boardElement.innerHTML = '';
@@ -822,6 +892,11 @@ function renderBoardSimple(customState = null) {
             } else {
                 square.classList.add('highlight');
             }
+        }
+
+        // Highlight Last Move
+        if (lastMove && (i === lastMove.from || i === lastMove.to)) {
+            square.classList.add('highlight-move');
         }
 
         const piece = boardToRender[i];
@@ -864,29 +939,34 @@ function completeMove(move, promotionType = null) {
 
     // Detect Capture (Local/Self)
     // Check BEFORE making the move on the board
-    const piece = game.board[move.from]; // Should exist
+    const piece = game.board[move.from];
     const isCapture = (game.board[move.to] !== null) ||
         (piece && piece.type === 'p' && move.to === game.enPassantTarget);
 
-    game.makeMove(move);
-    currentHistoryIndex = -1; // Ensure we are looking at live
-    playMoveSound(isCapture);
+    // Animate -> Move -> Sound -> Render
+    animateMove(move.from, move.to).then(() => {
+        game.makeMove(move);
 
-    if (gameMode === 'multiplayer') {
-        socket.emit('move', {
-            roomCode: currentRoomCode,
-            move: move,
-            turn: game.turn === 'w' ? 'b' : 'w' // We emit the move AFTER making it, so game.turn has flipped. 
-            // Wait. We need to say who made this move. 
-            // If game.turn is now Black, it means White made the move.
-            // So turn: game.turn === 'w' ? 'b' : 'w'. Correct.
-        });
-    }
+        // Update Last Move for Highlight (Local)
+        lastMove = { from: move.from, to: move.to };
 
-    selectedSquare = null;
-    validMoves = [];
-    renderBoardSimple();
-    checkGameOver();
+        currentHistoryIndex = -1;
+        playMoveSound(isCapture);
+
+        if (gameMode === 'multiplayer') {
+            socket.emit('move', {
+                roomCode: currentRoomCode,
+                move: move,
+                turn: game.turn === 'w' ? 'b' : 'w'
+            });
+        }
+
+        selectedSquare = null;
+        validMoves = [];
+        renderBoardSimple();
+        checkGameOver();
+    });
+
 }
 
 

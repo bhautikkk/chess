@@ -22,6 +22,10 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    min-height: 100dvh;
+    /* Mobile viewport fix */
+    overflow: hidden;
+    /* Prevent body scroll if content fits */
 }
 
 .screen {
@@ -58,6 +62,13 @@ body {
     position: relative;
     font-family: 'Segoe UI', sans-serif;
     overflow: hidden;
+    /* Force centering */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+
     /* Ensure blur doesn't leak */
 }
 
@@ -79,13 +90,39 @@ body {
 /* --- Glassmorphism UI Redesign --- */
 
 /* Main Glass Card */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes popIn {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
 .glass-card {
+    /* Existing Styles */
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: min(300px, 85vw);
-    /* Slimmer for mobile */
-    padding: 40px 30px;
+    width: min(260px, 80vw);
+    /* Even slimmer for "aur chhota" */
+    padding: 25px 15px;
+    /* Tighter padding */
     border-radius: 20px;
 
     /* Glass Effect */
@@ -93,9 +130,6 @@ body {
     background: linear-gradient(135deg,
             rgba(255, 255, 255, 0.1) 0%,
             rgba(255, 255, 255, 0.02) 100%);
-    backdrop-filter: blur(8px);
-    /* Less blur for clearer view of bg behind? No, reference has blur. */
-    /* Reference has HIGH contrast. Let's keep blur but make bg lighter/more transparent */
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -104,21 +138,24 @@ body {
     border-left: 1px solid rgba(255, 255, 255, 0.5);
     /* Highlight left */
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-    /* box-shadow already applied above, removing duplicate */
 
-    gap: 25px;
+    gap: 12px;
+    /* Tighter gap */
+
+    /* Animation */
+    animation: fadeIn 0.8s ease-out;
 }
 
+/* Typography Refinement */
 .game-title {
     font-family: 'Montserrat', sans-serif;
     font-weight: 700;
-    font-size: 1.8rem;
-    /* Slightly smaller to prevent wrap */
+    font-size: 1.4rem;
+    /* Smaller for compactness */
     white-space: nowrap;
-    /* Force single line */
     color: #ffffff;
     text-align: center;
-    margin: 0;
+    margin-bottom: 2px;
     letter-spacing: 1px;
     text-transform: uppercase;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -137,7 +174,8 @@ body {
 
 .glass-input {
     width: 100%;
-    padding: 15px 20px;
+    padding: 12px 15px;
+    /* Compact input */
     border-radius: 50px;
     border: 1px solid rgba(255, 255, 255, 0.3);
     background: rgba(0, 0, 0, 0.2);
@@ -156,8 +194,9 @@ body {
 
 .glass-input:focus {
     background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.6);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+    background-color: rgba(135, 206, 250, 0.6) !important;
+    /* Stronger Lite sky colour */
+    box-shadow: inset 0 0 15px rgba(135, 206, 250, 0.4);
 }
 
 /* Menu Buttons Container */
@@ -202,8 +241,8 @@ body {
 }
 
 .btn-text {
-    font-size: 1.2rem;
-    /* Larger text for mobile */
+    font-size: 1rem;
+    /* Adjusted for compact layout */
     font-weight: 600;
     color: white;
     text-transform: capitalize;
@@ -445,6 +484,11 @@ h1 {
 .board {
     width: 600px;
     height: 600px;
+    /* Lock Aspect Ratio to prevent shake on re-render */
+    aspect-ratio: 1 / 1;
+    min-height: 300px;
+    /* Safety min height */
+
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
@@ -491,9 +535,20 @@ h1 {
     box-shadow: inset 0 0 0 4px rgba(0, 0, 0, 0.2);
 }
 
+.highlight-move {
+    background-color: rgba(135, 206, 250, 0.5) !important;
+    /* Strong Lite sky colour */
+    box-shadow: inset 0 0 10px rgba(135, 206, 250, 0.3) !important;
+}
+
+
+/* Move Animation & Highlight */
 .piece {
     width: 90%;
+    /* Original size */
     height: 90%;
+    /* Smooth appearance for "halka sa animation" */
+    /* animation: popIn 0.3s ...; Removed to prevent blinking on re-render */
     background-size: cover;
     background-position: center;
     pointer-events: none;
