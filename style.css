@@ -962,33 +962,46 @@ button:active {
 
     /* Make menu elements more compact on mobile */
     .glass-card {
-        padding: 20px 10px;
-        /* Slimmer padding */
-        gap: 10px;
-        /* Reduced gap */
-        width: min(260px, 80vw);
-        /* Kept original width */
-    }
-
-    .menu-btn {
-        padding: 10px 16px;
-        /* Smaller button padding */
+        padding: 15px 10px;
         gap: 8px;
+        width: min(260px, 80vw);
     }
 
-    .btn-text {
-        font-size: 0.95rem;
-        /* Slightly smaller text */
-    }
-
-    .btn-icon {
-        font-size: 1.1rem;
+    .input-container {
+        display: flex;
+        justify-content: center;
+        width: 100%;
     }
 
     .glass-input {
-        padding: 10px;
-        font-size: 0.95rem;
+        padding: 8px 12px;
+        font-size: 0.85rem;
+        width: 90% !important;
+        /* Make slightly smaller than full width */
+        margin: 0 auto;
     }
+
+    .menu-buttons {
+        align-items: center;
+        /* Center flex children */
+    }
+
+    .menu-btn {
+        padding: 8px 10px;
+        gap: 5px;
+        width: 90%;
+        /* Make buttons smaller width */
+        font-size: 0.9rem;
+    }
+
+    .btn-text {
+        font-size: 0.85rem;
+    }
+
+    .btn-icon {
+        font-size: 1rem;
+    }
+
 
     .controls {
         gap: 5px;
