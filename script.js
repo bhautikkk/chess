@@ -45,6 +45,8 @@ let navElements = {
 let currentHistoryIndex = -1; // -1 means live game
 let isGameOver = false; // Track if game has ended
 let isAnimating = false; // Track if a move animation is in progress
+let moveQueue = []; // Queue for incoming moves
+let isProcessingMove = false; // Lock for queue processing
 
 // Screen Handling
 function showScreen(screen) {
@@ -553,6 +555,17 @@ socket.on('gameStart', (data) => {
 });
 
 socket.on('move', (data) => {
+    // Add to queue
+    moveQueue.push(data);
+    processMoveQueue();
+});
+
+function processMoveQueue() {
+    if (isProcessingMove || moveQueue.length === 0) return;
+
+    isProcessingMove = true;
+    const data = moveQueue.shift();
+
     // data = { move, whiteTime, blackTime }
     // If simple move object (local/legacy), handle gracefully
     let moveData = data.move || data;
@@ -586,8 +599,14 @@ socket.on('move', (data) => {
         updateTimerUI();
 
         checkGameOver();
+
+        // Process next move
+        isProcessingMove = false;
+        if (moveQueue.length > 0) {
+            setTimeout(processMoveQueue, 50); // Small buffer
+        }
     });
-});
+}
 
 socket.on('timeSync', (data) => {
     if (data.whiteTime !== undefined) whiteTime = data.whiteTime / 1000;
@@ -1080,6 +1099,7 @@ function updateStatus() {
 }
 
 resetBtn.addEventListener('click', () => {
+    if (isAnimating) return; // Prevent reset during animation
     game.reset();
     isGameOver = false; // Reset
     selectedSquare = null;
@@ -1100,6 +1120,7 @@ resetBtn.addEventListener('click', () => {
 });
 
 flipBtn.addEventListener('click', () => {
+    if (isAnimating) return; // Prevent flip during animation
     isFlipped = !isFlipped;
     renderBoardSimple();
 });
@@ -1108,6 +1129,7 @@ renderBoardSimple();
 
 // History Navigation
 document.getElementById('prev-move-btn').addEventListener('click', () => {
+    if (isAnimating) return;
     if (game.history.length === 0) return;
 
     if (currentHistoryIndex === -1) {
@@ -1122,6 +1144,7 @@ document.getElementById('prev-move-btn').addEventListener('click', () => {
 });
 
 document.getElementById('next-move-btn').addEventListener('click', () => {
+    if (isAnimating) return;
     if (currentHistoryIndex === -1) return; // Already live
 
     if (currentHistoryIndex < game.history.length - 1) {
