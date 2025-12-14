@@ -83,17 +83,21 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: min(350px, 90vw);
+    width: min(300px, 85vw);
+    /* Slimmer for mobile */
     padding: 40px 30px;
     border-radius: 20px;
 
     /* Glass Effect */
-    /* Stronger Glass Effect */
-    background: linear-gradient(145deg,
-            rgba(255, 255, 255, 0.15) 0%,
-            rgba(255, 255, 255, 0.05) 100%);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
+    /* Crystal Clear Glass */
+    background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.1) 0%,
+            rgba(255, 255, 255, 0.02) 100%);
+    backdrop-filter: blur(8px);
+    /* Less blur for clearer view of bg behind? No, reference has blur. */
+    /* Reference has HIGH contrast. Let's keep blur but make bg lighter/more transparent */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-top: 1px solid rgba(255, 255, 255, 0.5);
     /* Highlight top */
@@ -108,7 +112,10 @@ body {
 .game-title {
     font-family: 'Montserrat', sans-serif;
     font-weight: 700;
-    font-size: 2rem;
+    font-size: 1.8rem;
+    /* Slightly smaller to prevent wrap */
+    white-space: nowrap;
+    /* Force single line */
     color: #ffffff;
     text-align: center;
     margin: 0;
