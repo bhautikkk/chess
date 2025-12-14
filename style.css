@@ -89,13 +89,19 @@ body {
     border-radius: 20px;
 
     /* Glass Effect */
-    background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.1) 0%,
+    /* Stronger Glass Effect */
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.15) 0%,
             rgba(255, 255, 255, 0.05) 100%);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-top: 1px solid rgba(255, 255, 255, 0.5);
+    /* Highlight top */
+    border-left: 1px solid rgba(255, 255, 255, 0.5);
+    /* Highlight left */
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    /* box-shadow already applied above, removing duplicate */
 
     gap: 25px;
 }
