@@ -579,7 +579,26 @@ h1 {
 }
 
 .square.highlight-capture {
-    box-shadow: inset 0 0 0 4px rgba(0, 0, 0, 0.2);
+    /* Stronger Capture Hint */
+    box-shadow: inset 0 0 0 6px rgba(100, 100, 100, 0.6);
+    background: radial-gradient(circle, rgba(0, 0, 0, 0.1) 20%, rgba(200, 50, 50, 0.5) 120%);
+    cursor: grab;
+}
+
+.square.highlight-capture::after {
+    /* Corner indicators or ring */
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 4px solid rgba(200, 50, 50, 0.7);
+    /* Red border for take */
+    border-radius: 50%;
+    /* Circle ring */
+    box-sizing: border-box;
+    pointer-events: none;
 }
 
 .highlight-move {
