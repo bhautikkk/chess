@@ -1196,8 +1196,8 @@ function onSquareClick(index) {
             return;
         }
 
-        // Multiplayer Turn Check
-        if (gameMode === 'multiplayer' && game.turn !== playerColor) {
+        // Multiplayer & Computer Turn Check
+        if ((gameMode === 'multiplayer' || gameMode === 'computer') && game.turn !== playerColor) {
             showToast(`Wait for ${game.turn === 'w' ? 'White' : 'Black'}'s turn`);
             return;
         }
@@ -1209,7 +1209,7 @@ function onSquareClick(index) {
 
         const isPlayersTurnPiece = piece && piece.color === game.turn;
 
-        if (gameMode === 'multiplayer' && isPlayersTurnPiece && piece.color !== playerColor) {
+        if ((gameMode === 'multiplayer' || gameMode === 'computer') && isPlayersTurnPiece && piece.color !== playerColor) {
             // Not my piece
             return;
         }

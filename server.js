@@ -11,7 +11,7 @@ const fs = require('fs');
 
 // Determine OS and select appropriate binary
 const isWindows = process.platform === 'win32';
-const stockfishBinary = isWindows ? 'stockfish-windows-x86-64-avx2.exe' : 'stockfish-ubuntu-x86-64-avx2';
+const stockfishBinary = isWindows ? 'stockfish-windows-x86-64-avx2.exe' : 'stockfish-ubuntu-x86-64';
 const stockfishPath = path.join(__dirname, 'stockfish_engine', 'stockfish', stockfishBinary);
 
 // Ensure executable permission on Linux
