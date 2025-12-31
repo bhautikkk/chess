@@ -16,20 +16,20 @@ const SYMBOLS = {
 };
 
 // SVG data uris for pieces for a better look
-// Using Wikimedia Commons standard chess pieces
+// Using Chess.com 'Neo' standard chess pieces
 const PIECE_IMAGES = {
-    'w-p': 'https://upload.wikimedia.org/wikipedia/commons/4/45/Chess_plt45.svg',
-    'w-n': 'https://upload.wikimedia.org/wikipedia/commons/7/70/Chess_nlt45.svg',
-    'w-b': 'https://upload.wikimedia.org/wikipedia/commons/b/b1/Chess_blt45.svg',
-    'w-r': 'https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg',
-    'w-q': 'https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg',
-    'w-k': 'https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg',
-    'b-p': 'https://upload.wikimedia.org/wikipedia/commons/c/c7/Chess_pdt45.svg',
-    'b-n': 'https://upload.wikimedia.org/wikipedia/commons/e/ef/Chess_ndt45.svg',
-    'b-b': 'https://upload.wikimedia.org/wikipedia/commons/9/98/Chess_bdt45.svg',
-    'b-r': 'https://upload.wikimedia.org/wikipedia/commons/f/ff/Chess_rdt45.svg',
-    'b-q': 'https://upload.wikimedia.org/wikipedia/commons/4/47/Chess_qdt45.svg',
-    'b-k': 'https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg',
+    'w-p': 'https://www.chess.com/chess-themes/pieces/neo/150/wp.png',
+    'w-n': 'https://www.chess.com/chess-themes/pieces/neo/150/wn.png',
+    'w-b': 'https://www.chess.com/chess-themes/pieces/neo/150/wb.png',
+    'w-r': 'https://www.chess.com/chess-themes/pieces/neo/150/wr.png',
+    'w-q': 'https://www.chess.com/chess-themes/pieces/neo/150/wq.png',
+    'w-k': 'https://www.chess.com/chess-themes/pieces/neo/150/wk.png',
+    'b-p': 'https://www.chess.com/chess-themes/pieces/neo/150/bp.png',
+    'b-n': 'https://www.chess.com/chess-themes/pieces/neo/150/bn.png',
+    'b-b': 'https://www.chess.com/chess-themes/pieces/neo/150/bb.png',
+    'b-r': 'https://www.chess.com/chess-themes/pieces/neo/150/br.png',
+    'b-q': 'https://www.chess.com/chess-themes/pieces/neo/150/bq.png',
+    'b-k': 'https://www.chess.com/chess-themes/pieces/neo/150/bk.png',
 };
 
 class ChessGame {

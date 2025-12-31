@@ -1043,11 +1043,16 @@ function animateMove(fromIndex, toIndex) {
 
 
 function renderBoardSimple(customState = null) {
-    // Global Cleanup: Ensure no clones exist
+    // Global Cleanup: Ensure no clones or floating pieces exist
     document.querySelectorAll('.anim-clone').forEach(el => el.remove());
+    // Robust cleanup: Remove any pieces that might have been appended to body by mistake
+    document.querySelectorAll('body > .piece').forEach(el => el.remove());
 
     const boardToRender = customState ? customState.board : game.board;
-    boardElement.innerHTML = '';
+    // Fast clear
+    while (boardElement.firstChild) {
+        boardElement.removeChild(boardElement.firstChild);
+    }
 
     // History Mode Indicator
     if (currentHistoryIndex !== -1) {
