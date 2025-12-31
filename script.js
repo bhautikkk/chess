@@ -708,47 +708,63 @@ if (socket) {
 
         // Detect Capture (Remote)
         // We must check BEFORE making the move
-        const piece = game.board[moveData.from];
-        // Check standard capture or en passant
-        const isCapture = (game.board[moveData.to] !== null) ||
-            (piece && piece.type === 'p' && moveData.to === game.enPassantTarget);
 
-        // Execute Animation then Move
-        animateMove(moveData.from, moveData.to).then((cleanupCallback) => {
-            game.makeMoveInternal(moveData);
-            updatePgnTracker(moveData);
+        try {
+            const piece = game.board[moveData.from];
+            // Check standard capture or en passant
+            const isCapture = (game.board[moveData.to] !== null) ||
+                (piece && piece.type === 'p' && moveData.to === game.enPassantTarget);
 
-            // Update Last Move for Highlight (Remote)
-            lastMove = { from: moveData.from, to: moveData.to };
+            // Execute Animation then Move
+            animateMove(moveData.from, moveData.to).then((cleanupCallback) => {
+                try {
+                    game.makeMoveInternal(moveData);
+                    updatePgnTracker(moveData);
 
-            // Auto-jump to live if viewing history
-            if (currentHistoryIndex !== -1) {
-                currentHistoryIndex = -1;
-                showToast("New Move! Jumped to live.");
-            }
+                    // Update Last Move for Highlight (Remote)
+                    lastMove = { from: moveData.from, to: moveData.to };
 
-            playMoveSound(isCapture);
-            renderBoardSimple();
+                    // Auto-jump to live if viewing history
+                    if (currentHistoryIndex !== -1) {
+                        currentHistoryIndex = -1;
+                        showToast("New Move! Jumped to live.");
+                    }
 
-            // Sync Time
-            if (data.whiteTime !== undefined) whiteTime = data.whiteTime / 1000;
-            if (data.blackTime !== undefined) blackTime = data.blackTime / 1000;
-            updateTimerUI();
+                    playMoveSound(isCapture);
+                    renderBoardSimple();
 
-            checkGameOver();
+                    // Sync Time
+                    if (data.whiteTime !== undefined) whiteTime = data.whiteTime / 1000;
+                    if (data.blackTime !== undefined) blackTime = data.blackTime / 1000;
+                    updateTimerUI();
 
-            // Cleanup clone NOW
-            if (cleanupCallback && typeof cleanupCallback === 'function') {
-                cleanupCallback();
-                renderBoardSimple(); // FORCE RENDER AGAIN
-            }
+                    checkGameOver();
 
-            // Process next move
+                    // Cleanup clone NOW
+                    if (cleanupCallback && typeof cleanupCallback === 'function') {
+                        cleanupCallback();
+                    }
+                    // FORCE RENDER AGAIN moved outside if to ensure it happens
+                    renderBoardSimple();
+                } catch (innerErr) {
+                    console.error("Error applying move:", innerErr);
+                    showToast("Move Sync Error. Reloading...", 2000);
+                    setTimeout(() => location.reload(), 2000);
+                } finally {
+                    // Process next move
+                    isProcessingMove = false;
+                    if (moveQueue.length > 0) {
+                        setTimeout(processMoveQueue, 50); // Small buffer
+                    }
+                }
+            });
+        } catch (e) {
+            console.error("Error preparing move:", e);
             isProcessingMove = false;
             if (moveQueue.length > 0) {
-                setTimeout(processMoveQueue, 50); // Small buffer
+                setTimeout(processMoveQueue, 50);
             }
-        });
+        }
     }
 
     socket.on('timeSync', (data) => {

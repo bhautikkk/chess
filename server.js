@@ -47,9 +47,25 @@ io.on('connection', (socket) => {
             try { stockfishProcess.kill(); } catch (e) { }
         }
 
-        console.log(`Starting Stockfish for ${socket.id} at ${stockfishPath}`);
+        console.log(`[Stockfish] Request to start engine for ${socket.id}`);
+        if (!fs.existsSync(stockfishPath)) {
+            console.error(`[Stockfish] Binary NOT found at: ${stockfishPath}`);
+            socket.emit('error', 'Stockfish binary not found on server.');
+            return;
+        }
+
+        console.log(`[Stockfish] Spawning binary from: ${stockfishPath}`);
         try {
             stockfishProcess = spawn(stockfishPath);
+
+            stockfishProcess.on('error', (err) => {
+                console.error(`[Stockfish] Failed to start process: ${err.message}`);
+                socket.emit('error', 'Failed to start Chess Engine process.');
+            });
+
+            stockfishProcess.on('close', (code) => {
+                console.log(`[Stockfish] Process exited with code ${code}`);
+            });
 
             stockfishProcess.stdin.write('uci\n');
             stockfishProcess.stdin.write('ucinewgame\n');
@@ -62,6 +78,7 @@ io.on('connection', (socket) => {
                 const lines = output.split('\n');
                 for (const line of lines) {
                     if (line.startsWith('bestmove')) {
+                        console.log(`[Stockfish] Bestmove found: ${line}`);
                         const parts = line.split(' ');
                         const move = parts[1];
                         if (move && move !== '(none)') {
@@ -84,7 +101,7 @@ io.on('connection', (socket) => {
             });
 
             stockfishProcess.stderr.on('data', (data) => {
-                console.error(`SF ERR: ${data}`);
+                console.error(`[Stockfish] ERR: ${data}`);
             });
 
         } catch (e) {

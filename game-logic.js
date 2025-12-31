@@ -288,6 +288,10 @@ class ChessGame {
 
     makeMoveInternal(move, recordHistory = true) {
         const piece = this.board[move.from];
+        if (!piece) {
+            console.error("makeMoveInternal: No piece at from square", move.from);
+            return;
+        }
         const target = this.board[move.to];
 
         // Update board
