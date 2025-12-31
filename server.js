@@ -6,6 +6,8 @@ const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
 const path = require('path');
+const { spawn } = require('child_process');
+const stockfishPath = path.join(__dirname, 'stockfish_engine', 'stockfish', 'stockfish-windows-x86-64-avx2.exe');
 
 app.use(express.static(__dirname));
 
@@ -22,6 +24,80 @@ function generateRoomCode() {
 
 io.on('connection', (socket) => {
     console.log('a user connected', socket.id);
+
+    // Stockfish Process for this user
+    let stockfishProcess = null;
+
+    socket.on('startVsComputer', () => {
+        if (stockfishProcess) {
+            try { stockfishProcess.kill(); } catch (e) { }
+        }
+
+        console.log(`Starting Stockfish for ${socket.id} at ${stockfishPath}`);
+        try {
+            stockfishProcess = spawn(stockfishPath);
+
+            stockfishProcess.stdin.write('uci\n');
+            stockfishProcess.stdin.write('ucinewgame\n');
+            stockfishProcess.stdin.write('isready\n');
+
+            stockfishProcess.stdout.on('data', (data) => {
+                const output = data.toString();
+                // console.log(`SF OUT: ${output}`); // Verbose
+
+                const lines = output.split('\n');
+                for (const line of lines) {
+                    if (line.startsWith('bestmove')) {
+                        const parts = line.split(' ');
+                        const move = parts[1];
+                        if (move && move !== '(none)') {
+                            socket.emit('computerMove', { bestmove: move });
+                        }
+                    }
+                    // Analysis Output
+                    // info depth 10 seldepth 15 multipv 1 score cp 35 nodes ...
+                    if (line.startsWith('info') && line.includes('score')) {
+                        // Extract score
+                        const parts = line.split(' ');
+                        const scoreIndex = parts.indexOf('score');
+                        if (scoreIndex !== -1) {
+                            const type = parts[scoreIndex + 1]; // cp or mate
+                            const value = parts[scoreIndex + 2];
+                            socket.emit('analysisResult', { type, value });
+                        }
+                    }
+                }
+            });
+
+            stockfishProcess.stderr.on('data', (data) => {
+                console.error(`SF ERR: ${data}`);
+            });
+
+        } catch (e) {
+            console.error("Stockfish Spawn Error:", e);
+            socket.emit('error', "Failed to start Chess Engine.");
+        }
+    });
+
+    socket.on('analyze', (data) => {
+        if (!stockfishProcess) return;
+        const fen = data.fen;
+        if (fen) {
+            stockfishProcess.stdin.write(`position fen ${fen}\n`);
+            stockfishProcess.stdin.write(`go depth 15\n`); // Analyze to depth 15
+        }
+    });
+
+    socket.on('computerMove', (data) => {
+        if (!stockfishProcess) return;
+        // data.fen contains current board state
+        // We instruct engine to search from this state
+        const fen = data.fen;
+        if (fen) {
+            stockfishProcess.stdin.write(`position fen ${fen}\n`);
+            stockfishProcess.stdin.write(`go movetime 800\n`); // 0.8s think time for responsiveness
+        }
+    });
 
     // Create Room
     socket.on('createRoom', (playerName) => {
@@ -221,6 +297,10 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         console.log('user disconnected', socket.id);
+
+        if (stockfishProcess) {
+            try { stockfishProcess.kill(); } catch (e) { }
+        }
 
         // Find room and notify opponent
         for (const code in rooms) {

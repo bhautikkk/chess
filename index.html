@@ -54,10 +54,10 @@
 
             <!-- Primary Menu Buttons -->
             <div id="menu-primary" class="menu-buttons">
-                <!-- Play vs Friend (Local) - GREEN -->
-                <button id="play-local-btn" class="menu-btn btn-green">
-                    <span class="btn-icon">👥</span>
-                    <span class="btn-text">Play vs Friend (Local)</span>
+                <!-- Play vs Computer - GREEN -->
+                <button id="play-computer-btn" class="menu-btn btn-green">
+                    <span class="btn-icon">�</span>
+                    <span class="btn-text">Play vs Computer</span>
                 </button>
 
                 <!-- Create Room - BLUE -->
@@ -83,6 +83,26 @@
                     <span class="btn-text">Join Now</span>
                 </button>
                 <button id="join-back-btn" class="menu-btn btn-secondary">
+                    <span class="btn-text">← Back</span>
+                </button>
+            </div>
+
+            <!-- Computer Menu (Hidden by default) -->
+            <div id="menu-computer" class="menu-buttons hidden">
+                <h3 style="color: #eee; margin-bottom: 20px;">Choose Your Color</h3>
+                <div class="input-container" style="display: flex; gap: 15px; justify-content: center;">
+                    <button id="comp-white-btn" class="menu-btn btn-secondary"
+                        style="background: #f0f0f0; color: #333; min-width: 120px;">
+                        <span style="font-size: 2rem; display: block;">♔</span>
+                        White
+                    </button>
+                    <button id="comp-black-btn" class="menu-btn btn-secondary"
+                        style="background: #333; color: #f0f0f0; min-width: 120px;">
+                        <span style="font-size: 2rem; display: block;">♚</span>
+                        Black
+                    </button>
+                </div>
+                <button id="comp-back-btn" class="menu-btn btn-secondary" style="margin-top: 20px;">
                     <span class="btn-text">← Back</span>
                 </button>
             </div>
@@ -147,6 +167,7 @@
                 </div>
                 <button id="flip-btn" class="btn-secondary">🔄 Flip</button>
                 <button id="reset-btn" class="btn-secondary">🔁 Restart</button>
+                <button id="copy-pgn-btn" class="btn-secondary" title="Copy PGN">📋 PGN</button>
                 <!-- Multiplayer Controls -->
                 <button id="draw-btn" class="btn-draw" style="display:none;">½ Draw</button>
                 <button id="resign-btn" class="btn-resign" style="display:none;">🏳️ Resign</button>
@@ -191,6 +212,7 @@
     <div id="toast-container"></div>
 
     <!-- Logic -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="game-logic.js"></script>
     <script src="script.js"></script>

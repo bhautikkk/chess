@@ -66,6 +66,22 @@ let gameMode = 'local'; // 'local', 'multiplayer'
 let playerColor = 'w'; // 'w' or 'b' (for multiplayer)
 let currentRoomCode = null;
 let lastMove = null; // Track last move for highlighting {from: index, to: index}
+let pgnTracker = new Chess(); // Used for PGN generation
+
+function updatePgnTracker(move) {
+    // move = { from: index, to: index, promotion: 'q' }
+    try {
+        const from = game.indexToSquare(move.from);
+        const to = game.indexToSquare(move.to);
+        const promotion = move.promotion || undefined; // 'q', etc.
+
+        pgnTracker.move({ from, to, promotion });
+        console.log("PGN Updated:", pgnTracker.pgn());
+    } catch (e) {
+        console.error("PGN Update Failed:", e);
+    }
+}
+
 let navElements = {
     myName: "Me",
     opponentName: "Opponent",
@@ -208,51 +224,88 @@ document.querySelectorAll('.promo-btn').forEach(btn => {
 
 // --- Menu Events ---
 
-// Play Local
-// Play Local
-document.getElementById('play-local-btn').addEventListener('click', () => {
-    console.log("Play Local Clicked"); // Debug
+// Play vs Computer (Show Menu)
+document.getElementById('play-computer-btn').addEventListener('click', () => {
     const nameInput = document.getElementById('name-input');
-    const name = nameInput ? nameInput.value.trim() : "Player 1";
+    const name = nameInput ? nameInput.value.trim() : "";
+    if (!name) {
+        showError("Please enter your name first!");
+        return;
+    }
+    showMenuSection(document.getElementById('menu-computer'));
+});
 
-    gameMode = 'local';
-    playerColor = 'w';
+// Computer Color Selection
+const startComputerGame = (color) => {
+    console.log("Starting Computer Game as", color);
+    const nameInput = document.getElementById('name-input');
+    const name = nameInput ? nameInput.value.trim() : "Player";
+
+    gameMode = 'computer';
+    playerColor = color; // 'w' or 'b'
 
     if (game) {
         game.reset();
-        game.turn = 'w'; // Explicit reset
+        game.turn = 'w';
+        pgnTracker.reset();
     } else {
         console.error("Game object missing!");
-        alert("Game logic invalid. Reloading...");
         location.reload();
         return;
     }
 
-    currentHistoryIndex = -1; // Reset history view
-    isFlipped = false;
+    currentHistoryIndex = -1;
+    isFlipped = (playerColor === 'b');
     currentRoomCode = null;
-    isGameOver = false; // Reset game over state
-    lastMove = null; // Reset last move
-    isAnimating = false; // Fix: Ensure animation lock is cleared
+    isGameOver = false;
+    lastMove = null;
+    isAnimating = false;
 
-    // Set Local Names
-    navElements.whiteName = name || "Player 1";
-    navElements.blackName = "Player 2";
+    // Set Names
+    if (playerColor === 'w') {
+        navElements.whiteName = name;
+        navElements.blackName = "Stockfish";
+    } else {
+        navElements.whiteName = "Stockfish";
+        navElements.blackName = name;
+    }
 
     updateGameInfoHeader(true);
     showScreen(gameScreen);
     renderBoardSimple();
 
-    // Start Local Timer
-    // User requested NO timer for local mode
-    // whiteTime = 900;
-    // blackTime = 900;
-    // startTimer();
-    // updateTimerUI();
-    document.querySelectorAll('.player-timer').forEach(el => el.style.display = 'none');
+    // Start Game on Server
+    if (socket) {
+        socket.emit('startVsComputer');
+
+        // If playing as Black, Computer (White) must move first
+        if (playerColor === 'b') {
+            // Send empty move or request start?
+            // Simply sending computerMove with current FEN (startpos) will trigger it.
+            setTimeout(() => {
+                if (socket) {
+                    socket.emit('computerMove', {
+                        move: null, // No previous move
+                        fen: game.toFEN()
+                    });
+                    showToast("Stockfish is thinking...", 1500);
+                }
+            }, 500);
+        }
+
+    } else {
+        showError("Server connection failed. Cannot play vs Computer.");
+    }
+
+    document.querySelectorAll('.player-timer').forEach(el => el.style.display = 'block');
+    startTimer();
 
     if (resetBtn) resetBtn.style.display = 'inline-block';
-});
+};
+
+document.getElementById('comp-white-btn').addEventListener('click', () => startComputerGame('w'));
+document.getElementById('comp-black-btn').addEventListener('click', () => startComputerGame('b'));
+document.getElementById('comp-back-btn').addEventListener('click', () => showMenuSection(menuPrimary));
 
 // Create Room
 // Create Room
@@ -344,6 +397,7 @@ document.getElementById('cancel-wait-btn').addEventListener('click', () => {
     location.reload();
 });
 
+
 // Copy Code Button
 document.getElementById('copy-code-btn').addEventListener('click', () => {
     const code = document.getElementById('display-room-code').innerText;
@@ -357,6 +411,25 @@ document.getElementById('copy-code-btn').addEventListener('click', () => {
             console.error('Failed to copy: ', err);
             showError("Failed to copy code.");
         });
+    }
+});
+
+// Copy PGN Button
+document.getElementById('copy-pgn-btn').addEventListener('click', () => {
+    const pgn = pgnTracker.pgn();
+    if (pgn) {
+        navigator.clipboard.writeText(pgn).then(() => {
+            const btn = document.getElementById('copy-pgn-btn');
+            const originalText = btn.innerHTML; // Store HTML (icon + text)
+            btn.innerText = "Copied!";
+            setTimeout(() => btn.innerHTML = originalText, 2000);
+            showToast("PGN Copied to clipboard!");
+        }).catch(err => {
+            console.error('Failed to copy PGN: ', err);
+            showError("Failed to copy PGN.");
+        });
+    } else {
+        showToast("No moves to copy yet.");
     }
 });
 
@@ -581,6 +654,7 @@ if (socket) {
 
             // UI Reset
             game.reset();
+            pgnTracker.reset();
             isGameOver = false; // Reset game over state
             currentHistoryIndex = -1;
             lastMove = null; // Reset last move
@@ -642,6 +716,7 @@ if (socket) {
         // Execute Animation then Move
         animateMove(moveData.from, moveData.to).then((cleanupCallback) => {
             game.makeMoveInternal(moveData);
+            updatePgnTracker(moveData);
 
             // Update Last Move for Highlight (Remote)
             lastMove = { from: moveData.from, to: moveData.to };
@@ -681,6 +756,35 @@ if (socket) {
         if (data.blackTime !== undefined) blackTime = data.blackTime / 1000;
         updateTimerUI();
     });
+
+    socket.on('computerMove', (data) => {
+        // data = { bestmove: "e2e4" }
+        console.log("Computer moved:", data.bestmove);
+
+        // Parse "e2e4" or "e7e8q"
+        const moveStr = data.bestmove;
+        if (!moveStr) return;
+
+        const fromSq = moveStr.substring(0, 2);
+        const toSq = moveStr.substring(2, 4);
+        const promotionWithChar = moveStr.length > 4 ? moveStr.substring(4, 5) : null;
+
+        const fromIndex = game.squareToIndex(fromSq);
+        const toIndex = game.squareToIndex(toSq);
+
+        const move = {
+            from: fromIndex,
+            to: toIndex,
+            promotion: promotionWithChar // 'q', 'r', etc.
+        };
+
+        // Add to queue like multiplayer moves
+        moveQueue.push(move); // Just the move object, handled by processMoveQueue logic?
+        // Wait, processMoveQueue expects { move: ..., whiteTime... } OR just move.
+        // My check in processMoveQueue: `let moveData = data.move || data;`
+        // So passing `move` directly works.
+        processMoveQueue();
+    });
 }
 
 if (socket) {
@@ -695,6 +799,18 @@ if (socket) {
 
 // New Events
 if (socket) {
+    socket.on('analysisResult', (data) => {
+        // data = { type: 'cp' | 'mate', value: number }
+        let text = "";
+        if (data.type === 'cp') {
+            const val = parseInt(data.value) / 100;
+            text = (val > 0 ? "+" : "") + val.toFixed(2);
+        } else if (data.type === 'mate') {
+            text = "M" + data.value;
+        }
+        // updateEvalBar(text); // Removed eval bar
+    });
+
     socket.on('drawOffer', () => {
         const html = `
         <div class="modal-overlay">
@@ -1006,6 +1122,7 @@ function completeMove(move, promotionType = null) {
     // Animate -> Move -> Sound -> Render
     animateMove(move.from, move.to).then((cleanupCallback) => {
         game.makeMove(move);
+        updatePgnTracker(move);
 
         // Update Last Move for Highlight (Local)
         lastMove = { from: move.from, to: move.to };
@@ -1019,6 +1136,20 @@ function completeMove(move, promotionType = null) {
                 move: move,
                 turn: game.turn === 'w' ? 'b' : 'w'
             });
+        } else if (gameMode === 'computer') {
+            // Send move to server to trigger computer response
+            // We send the NEW state (after move).
+            // Wait, makeMove has flipped the turn. So game.turn is now 'b'.
+
+            // Check if game over?
+            if (!game.isCheckmate() && !game.isDraw && !game.isStalemate) { // Need to check flags or re-eval
+                // Just send move. Server will validate or just respond.
+                // We send the FEN AFTER the move.
+                socket.emit('computerMove', {
+                    move: move,
+                    fen: game.toFEN()
+                });
+            }
         }
 
         renderBoardSimple();
@@ -1219,7 +1350,7 @@ document.getElementById('next-move-btn').addEventListener('click', () => {
         renderBoardSimple();
     }
 });
+
 renderBoardSimple();
 showToast("System Ready", 1000);
 // Wrapper end removed
-

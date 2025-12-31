@@ -457,4 +457,39 @@ class ChessGame {
         }
         return true;
     }
+
+    toFEN() {
+        let fen = '';
+        for (let r = 0; r < 8; r++) {
+            let empty = 0;
+            for (let c = 0; c < 8; c++) {
+                const piece = this.board[r * 8 + c];
+                if (!piece) {
+                    empty++;
+                } else {
+                    if (empty > 0) {
+                        fen += empty;
+                        empty = 0;
+                    }
+                    fen += piece.color === 'w' ? piece.type.toUpperCase() : piece.type;
+                }
+            }
+            if (empty > 0) fen += empty;
+            if (r < 7) fen += '/';
+        }
+
+        fen += ' ' + this.turn;
+
+        let castling = '';
+        if (this.castling.w.k) castling += 'K';
+        if (this.castling.w.q) castling += 'Q';
+        if (this.castling.b.k) castling += 'k';
+        if (this.castling.b.q) castling += 'q';
+        fen += ' ' + (castling || '-');
+
+        fen += ' ' + (this.enPassantTarget ? this.indexToSquare(this.enPassantTarget) : '-');
+        fen += ' ' + this.halfMoveClock + ' ' + this.fullMoveNumber;
+
+        return fen;
+    }
 }
