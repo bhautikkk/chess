@@ -7,7 +7,21 @@ const { Server } = require("socket.io");
 const io = new Server(server);
 const path = require('path');
 const { spawn } = require('child_process');
-const stockfishPath = path.join(__dirname, 'stockfish_engine', 'stockfish', 'stockfish-windows-x86-64-avx2.exe');
+const fs = require('fs');
+
+// Determine OS and select appropriate binary
+const isWindows = process.platform === 'win32';
+const stockfishBinary = isWindows ? 'stockfish-windows-x86-64-avx2.exe' : 'stockfish-ubuntu-x86-64-avx2';
+const stockfishPath = path.join(__dirname, 'stockfish_engine', 'stockfish', stockfishBinary);
+
+// Ensure executable permission on Linux
+if (!isWindows && fs.existsSync(stockfishPath)) {
+    try {
+        fs.chmodSync(stockfishPath, '755');
+    } catch (err) {
+        console.error("Failed to set chmod for Stockfish:", err);
+    }
+}
 
 app.use(express.static(__dirname));
 
